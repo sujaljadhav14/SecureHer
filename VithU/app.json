@@ -1,0 +1,63 @@
+{
+  "expo": {
+    "name": "vithU",
+    "slug": "vithU",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#FFB5D8"
+          
+        }
+      ]
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "fetch",
+          "processing",
+          "remote-notification"
+        ],
+        "NSMotionUsageDescription": "This app uses motion data to detect emergency situations and trigger SOS alerts when needed.",
+        "NSLocationWhenInUseUsageDescription": "Your location is used to send emergency alerts to your contacts.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Your location is used to send emergency alerts to your contacts, even when the app is in the background."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.gauravv.pawar.vithU",
+      "permissions": [
+        "VIBRATE",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "RECEIVE_BOOT_COMPLETED",
+        "android.permission.ACTIVITY_RECOGNITION",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.WAKE_LOCK"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "07a23968-5255-4e16-bfc0-cc2bd2bf8e78"
+      }
+    }
+  }
+}
