@@ -10,14 +10,14 @@ import {
   Platform,
   Linking
 } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_GOOGLE } from '../components/Map';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { getDistance } from 'geolib';
 import { useNavigation } from '@react-navigation/native';
 
 const PoliceStationFinder = () => {
-    const navigation = useNavigation();
+  const navigation = useNavigation();
   const [location, setLocation] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
   const [policeStations, setPoliceStations] = useState([]);
@@ -62,7 +62,7 @@ const PoliceStationFinder = () => {
       );
 
       const data = await response.json();
-      
+
       if (data.status === 'OK') {
         const stations = data.results.map(station => ({
           id: station.place_id,
@@ -73,9 +73,9 @@ const PoliceStationFinder = () => {
           rating: station.rating,
           distance: getDistance(
             { latitude, longitude },
-            { 
-              latitude: station.geometry.location.lat, 
-              longitude: station.geometry.location.lng 
+            {
+              latitude: station.geometry.location.lat,
+              longitude: station.geometry.location.lng
             }
           )
         }));
@@ -132,7 +132,7 @@ const PoliceStationFinder = () => {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#EEE',
-    paddingTop:65,
+    paddingTop: 65,
   },
   backButton: {
     padding: 8,

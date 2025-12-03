@@ -17,7 +17,7 @@ import {
   Share,
   Vibration
 } from 'react-native';
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from '../components/Map';
 import * as Location from 'expo-location';
 import { Ionicons, MaterialIcons, FontAwesome5, FontAwesome } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -34,33 +34,33 @@ const JourneyTracker = () => {
   const navigation = useNavigation();
   const mapRef = useRef(null);
   const locationSubscription = useRef(null);
-  
+
   // Basic state
   const [origin, setOrigin] = useState(null);
   const [destination, setDestination] = useState(null);
   const [destinationText, setDestinationText] = useState('');
   const [currentLocation, setCurrentLocation] = useState(null);
   const [isTracking, setIsTracking] = useState(false);
-  
+
   // Route & navigation state
   const [routes, setRoutes] = useState([]);
   const [selectedRouteIndex, setSelectedRouteIndex] = useState(0);
   const [travelMode, setTravelMode] = useState('walking');
   const [route, setRoute] = useState(null);
   const [intermediatePlaces, setIntermediatePlaces] = useState([]);
-  
+
   // UI state
   const [searchResults, setSearchResults] = useState([]);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [showRouteOptions, setShowRouteOptions] = useState(false);
   const [showPlacesList, setShowPlacesList] = useState(false);
   const [loading, setLoading] = useState(false);
-  
+
   // Journey metrics
   const [estimatedTime, setEstimatedTime] = useState(null);
   const [distance, setDistance] = useState(null);
   const [journeyStartTime, setJourneyStartTime] = useState(null);
-  
+
   // Safety information
   const [safetyData, setSafetyData] = useState(null);
   const [routeSafetyScores, setRouteSafetyScores] = useState({});
@@ -68,7 +68,7 @@ const JourneyTracker = () => {
   const [isNightTime, setIsNightTime] = useState(checkTimeOfDay());
   const [showSafetyInfoModal, setShowSafetyInfoModal] = useState(false);
   const [showSafetyNotice, setShowSafetyNotice] = useState(false);
-  
+
   // Contacts
   const [sharedContacts, setSharedContacts] = useState([]);
   const [showContactsModal, setShowContactsModal] = useState(false);
@@ -82,7 +82,7 @@ const JourneyTracker = () => {
   // Format current time to the required time slot format
   const getTimeSlot = () => {
     const hour = new Date().getHours();
-    
+
     if (hour >= 0 && hour < 3) return '12-3_am';
     if (hour >= 3 && hour < 6) return '3-6_am';
     if (hour >= 6 && hour < 9) return '6-9_am';
@@ -97,7 +97,7 @@ const JourneyTracker = () => {
     setupLocationTracking();
     setIsNightTime(checkTimeOfDay());
     loadSharedContacts();
-    
+
     return () => {
       if (locationSubscription.current) {
         stopLocationTracking();
@@ -148,17 +148,17 @@ const JourneyTracker = () => {
       const response = await fetch(
         `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_MAPS_API_KEY}`
       );
-      
+
       if (!response.ok) {
         throw new Error(`Geocoding API responded with status: ${response.status}`);
       }
-      
+
       const data = await response.json();
-      
+
       if (data.status !== 'OK') {
         throw new Error(`Geocoding API error: ${data.status}`);
       }
-      
+
       const currentLocation = {
         latitude,
         longitude,
@@ -167,7 +167,7 @@ const JourneyTracker = () => {
 
       setOrigin(currentLocation);
       setCurrentLocation(currentLocation);
-      
+
       // Center map on current location
       if (mapRef.current) {
         mapRef.current.animateCamera({
@@ -188,12 +188,12 @@ const JourneyTracker = () => {
       Alert.alert('Missing Destination', 'Please select a destination first');
       return;
     }
-    
+
     if (!origin) {
       Alert.alert('Missing Origin', 'Could not determine your current location');
       return;
     }
-    
+
     startLocationTracking();
   };
 
@@ -208,11 +208,11 @@ const JourneyTracker = () => {
         (location) => {
           const { latitude, longitude } = location.coords;
           setCurrentLocation({ latitude, longitude });
-          
+
           if (destination) {
             updateJourneyStatus({ latitude, longitude });
           }
-          
+
           // Update map camera to follow user
           if (mapRef.current) {
             mapRef.current.animateCamera({
@@ -222,10 +222,10 @@ const JourneyTracker = () => {
           }
         }
       );
-      
+
       setIsTracking(true);
       setJourneyStartTime(new Date());
-      
+
       // Notify contacts that journey has started
       notifyContacts('Journey started', false);
     } catch (error) {
@@ -239,10 +239,10 @@ const JourneyTracker = () => {
       locationSubscription.current.remove();
       locationSubscription.current = null;
       setIsTracking(false);
-      
+
       // Notify contacts that journey has ended
       notifyContacts('Journey completed successfully', false);
-      
+
       // Show journey summary
       showJourneySummary();
     }
@@ -254,7 +254,7 @@ const JourneyTracker = () => {
     // Calculate remaining distance and time
     const remainingDistance = calculateDistance(currentLoc, destination);
     setDistance(remainingDistance);
-    
+
     // Update estimated arrival time
     const timeInMinutes = Math.round((remainingDistance / getSpeedByMode(travelMode)) * 60);
     setEstimatedTime(timeInMinutes);
@@ -271,27 +271,27 @@ const JourneyTracker = () => {
 
   const calculateDistance = (point1, point2) => {
     if (!point1 || !point2) return 0;
-    
+
     const lat1 = point1.latitude;
     const lon1 = point1.longitude;
     const lat2 = point2.latitude;
     const lon2 = point2.longitude;
-    
+
     const R = 6371; // Radius of the earth in km
     const dLat = deg2rad(lat2 - lat1);
     const dLon = deg2rad(lon2 - lon1);
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
-      Math.sin(dLon/2) * Math.sin(dLon/2)
-    ; 
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2)
+      ;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const d = R * c; // Distance in km
     return d;
   };
 
   const deg2rad = (deg) => {
-    return deg * (Math.PI/180);
+    return deg * (Math.PI / 180);
   };
 
   const getSpeedByMode = (mode) => {
@@ -308,31 +308,31 @@ const JourneyTracker = () => {
       setSearchResults([]);
       return;
     }
-  
+
     try {
       setLoading(true);
-      
+
       // Fetch place predictions
       const response = await fetch(
         `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${GOOGLE_MAPS_API_KEY}&components=country:in`
       );
-      
+
       if (!response.ok) {
         throw new Error(`API responded with status: ${response.status}`);
       }
-      
+
       const data = await response.json();
-      
+
       if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
         throw new Error(`Places API error: ${data.status}`);
       }
-      
+
       if (!data.predictions || data.predictions.length === 0) {
         setSearchResults([]);
         setShowSearchModal(false);
         return;
       }
-      
+
       // Process each prediction to get complete location details
       const results = await Promise.all(
         data.predictions.map(async (prediction) => {
@@ -340,17 +340,17 @@ const JourneyTracker = () => {
             const detailsResponse = await fetch(
               `https://maps.googleapis.com/maps/api/place/details/json?place_id=${prediction.place_id}&fields=geometry&key=${GOOGLE_MAPS_API_KEY}`
             );
-            
+
             if (!detailsResponse.ok) {
               throw new Error(`Details API responded with status: ${detailsResponse.status}`);
             }
-            
+
             const detailsData = await detailsResponse.json();
-            
+
             if (detailsData.status !== 'OK' || !detailsData.result?.geometry?.location) {
               return null;
             }
-            
+
             return {
               id: prediction.place_id,
               description: prediction.description,
@@ -365,10 +365,10 @@ const JourneyTracker = () => {
           }
         })
       );
-      
+
       // Filter out null results
       const validResults = results.filter(result => result !== null);
-      
+
       setSearchResults(validResults);
       if (validResults.length > 0) {
         setShowSearchModal(true);
@@ -383,29 +383,29 @@ const JourneyTracker = () => {
 
   const selectLocation = async (item) => {
     try {
-      if (!item || !item.location || 
-          typeof item.location.latitude !== 'number' || 
-          typeof item.location.longitude !== 'number') {
+      if (!item || !item.location ||
+        typeof item.location.latitude !== 'number' ||
+        typeof item.location.longitude !== 'number') {
         Alert.alert('Error', 'Invalid location data. Please select another destination.');
         return;
       }
-      
+
       // Set destination
       setDestination({
         latitude: item.location.latitude,
         longitude: item.location.longitude
       });
-      
+
       setDestinationText(item.description || 'Selected destination');
       setShowSearchModal(false);
       setSearchResults([]);
       Keyboard.dismiss();
-      
+
       // Ensure we have origin coordinates
       if (!origin) {
         await getCurrentLocation();
       }
-      
+
       // Fetch routes after a short delay to ensure state is updated
       setTimeout(() => {
         if (origin) {
@@ -426,36 +426,36 @@ const JourneyTracker = () => {
       console.error('Missing origin or destination for route fetch');
       return;
     }
-    
+
     try {
       setLoading(true);
-      
+
       const response = await fetch(
         `https://maps.googleapis.com/maps/api/directions/json?origin=${originLoc.latitude},${originLoc.longitude}&destination=${destinationLoc.latitude},${destinationLoc.longitude}&mode=${travelMode}&alternatives=true&key=${GOOGLE_MAPS_API_KEY}`
       );
-      
+
       if (!response.ok) {
         throw new Error(`Directions API responded with status: ${response.status}`);
       }
-      
+
       const result = await response.json();
-      
+
       if (result.status !== 'OK') {
         throw new Error(`Directions API error: ${result.status}`);
       }
-      
+
       if (result.routes && result.routes.length) {
         // Process all routes
         const processedRoutes = result.routes.map((route, index) => {
           const leg = route.legs[0];
           const steps = leg.steps;
-          
+
           // Decode the polyline for the route
           const path = decodePolyline(route.overview_polyline.points);
-          
+
           // Extract intermediate places along the route
           const places = samplePointsAlongPath(path, 200); // Every 200 meters
-          
+
           return {
             index,
             distance: leg.distance.text,
@@ -468,19 +468,19 @@ const JourneyTracker = () => {
             steps
           };
         });
-        
+
         setRoutes(processedRoutes);
-        
+
         // Initially select the first route
         setSelectedRouteIndex(0);
         setRoute(processedRoutes[0].path);
         setIntermediatePlaces(processedRoutes[0].places);
         setDistance(processedRoutes[0].distance);
         setEstimatedTime(processedRoutes[0].duration);
-        
+
         // Submit routes for safety analysis
         analyzeSafetyForRoutes(processedRoutes);
-        
+
         // Fit map to route
         fitMapToRoute(processedRoutes[0].path);
       } else {
@@ -496,14 +496,14 @@ const JourneyTracker = () => {
 
   const analyzeSafetyForRoutes = async (routes) => {
     if (!routes || routes.length === 0) return;
-    
+
     try {
       setLoadingSafety(true);
       setSafetyData(null); // Clear previous data
 
       // Prepare data for safety API
       const safetyRequestData = {
-        routes: routes.map(route => 
+        routes: routes.map(route =>
           route.places.map(place => ({
             Name: place.name || "Waypoint",
             Type: place.isStart ? "Starting Point" : place.isEnd ? "Destination" : "Intermediate",
@@ -516,27 +516,27 @@ const JourneyTracker = () => {
       // Call safety analysis API
       try {
         const safetyResponse = await axios.post(SAFETY_API_URL, safetyRequestData);
-        
+
         if (safetyResponse.data) {
           setSafetyData(safetyResponse.data);
-          
+
           // Extract safety scores for each route
           const safetyScores = {};
-          
+
           // If there's a recommendedRoute property with routeIndex
           if (safetyResponse.data.recommendedRoute) {
             const recommendedRouteIndex = safetyResponse.data.recommendedRoute.routeIndex;
-            
+
             // Set the recommended route as selected if it's available
             if (recommendedRouteIndex >= 0 && recommendedRouteIndex < routes.length) {
               selectRouteByIndex(recommendedRouteIndex);
-              
+
               // Show safety notice
               setShowSafetyNotice(true);
               // Auto-hide after 5 seconds
               setTimeout(() => setShowSafetyNotice(false), 5000);
             }
-            
+
             // Create safety scores object
             routes.forEach((route, index) => {
               if (index === recommendedRouteIndex) {
@@ -560,12 +560,12 @@ const JourneyTracker = () => {
               }
             });
           }
-          
+
           setRouteSafetyScores(safetyScores);
         }
       } catch (error) {
         console.error('Safety API error:', error);
-        
+
         // Set default safety scores if API fails
         const defaultScores = {};
         routes.forEach((route, index) => {
@@ -583,7 +583,7 @@ const JourneyTracker = () => {
 
   const decodePolyline = (encoded) => {
     if (!encoded) return [];
-    
+
     const poly = [];
     let index = 0, len = encoded.length;
     let lat = 0, lng = 0;
@@ -623,9 +623,9 @@ const JourneyTracker = () => {
 
   const samplePointsAlongPath = (path, distanceMeters) => {
     if (!path || path.length < 2) return [];
-    
+
     const places = [];
-    
+
     // Always add the start and end points
     places.push({
       name: 'Starting Point',
@@ -634,17 +634,17 @@ const JourneyTracker = () => {
       isEnd: false,
       isWaypoint: true
     });
-    
+
     // Sample points every distanceMeters
     let accumulatedDistance = 0;
     for (let i = 0; i < path.length - 1; i++) {
       const point1 = path[i];
       const point2 = path[i + 1];
-      
+
       // Calculate segment distance
       const segmentDistance = calculateDistance(point1, point2) * 1000; // Convert to meters
       accumulatedDistance += segmentDistance;
-      
+
       // If we've passed the sampling threshold, add a point
       if (accumulatedDistance >= distanceMeters) {
         places.push({
@@ -654,12 +654,12 @@ const JourneyTracker = () => {
           isEnd: false,
           isWaypoint: false
         });
-        
+
         // Reset accumulated distance
         accumulatedDistance = 0;
       }
     }
-    
+
     // Add the end point
     places.push({
       name: 'Destination',
@@ -668,13 +668,13 @@ const JourneyTracker = () => {
       isEnd: true,
       isWaypoint: true
     });
-    
+
     return places;
   };
 
   const fitMapToRoute = (routePath) => {
     if (!mapRef.current || !routePath || routePath.length < 2) return;
-    
+
     try {
       const bounds = routePath.reduce(
         (acc, coord) => {
@@ -692,7 +692,7 @@ const JourneyTracker = () => {
           maxLng: routePath[0].longitude
         }
       );
-      
+
       mapRef.current.fitToCoordinates(
         [
           { latitude: bounds.minLat, longitude: bounds.minLng },
@@ -710,13 +710,13 @@ const JourneyTracker = () => {
 
   const shareLocationWithContacts = async (location) => {
     if (sharedContacts.length === 0 || !isTracking) return;
-    
+
     try {
       const message = createLocationShareMessage(location);
-      
+
       // In a real app, you would send this to your backend
       console.log('Sharing location with contacts:', message);
-      
+
       // Could implement actual sharing logic here
     } catch (error) {
       console.error('Error sharing location:', error);
@@ -725,36 +725,36 @@ const JourneyTracker = () => {
 
   const createLocationShareMessage = (location) => {
     const formattedTime = new Date().toLocaleTimeString();
-    
+
     let message = `📍 Location update at ${formattedTime}\n`;
     message += `🚶‍♀️ ${destinationText ? 'Heading to: ' + destinationText : 'Journey in progress'}\n`;
-    
+
     if (estimatedTime) {
       message += `⏱️ ETA: ${typeof estimatedTime === 'number' ? estimatedTime + ' min' : estimatedTime}\n`;
     }
-    
+
     if (distance) {
       message += `📏 Distance remaining: ${typeof distance === 'number' ? distance.toFixed(2) + ' km' : distance}\n`;
     }
-    
+
     // Include safety information if available
     if (safetyData && routeSafetyScores[selectedRouteIndex]) {
       const safetyScore = routeSafetyScores[selectedRouteIndex];
       message += `🛡️ Route safety score: ${safetyScore.toFixed(1)}/10\n`;
     }
-    
+
     message += `🔗 https://maps.google.com/?q=${location.latitude},${location.longitude}`;
-    
+
     return message;
   };
 
   const notifyContacts = (message, isEmergency = false) => {
     if (sharedContacts.length === 0) return;
-    
+
     try {
       // In a real app, this would send notifications to contacts
       console.log(`${isEmergency ? 'EMERGENCY' : 'Notification'}: ${message}`);
-      
+
       // For demo, show what would be sent
       if (isEmergency) {
         Alert.alert('Emergency Alert Sent', `Your emergency contacts have been notified with your current location and status.`);
@@ -786,11 +786,11 @@ const JourneyTracker = () => {
     try {
       const message = createSOSMessage();
       notifyContacts(message, true);
-      
+
       // Vibrate device in SOS pattern
       const PATTERN = [0, 200, 100, 200, 100, 200, 300, 200, 100, 200, 100, 200];
       Vibration.vibrate(PATTERN);
-      
+
       // Share SOS location through the share dialog
       await Share.share({
         message: message,
@@ -806,17 +806,17 @@ const JourneyTracker = () => {
     const now = new Date();
     const formattedTime = now.toLocaleTimeString();
     const formattedDate = now.toLocaleDateString();
-    
+
     let message = `🆘 EMERGENCY SOS ALERT 🆘\n\n`;
     message += `Time: ${formattedTime} ${formattedDate}\n`;
     message += `Location: ${currentLocation ? `https://maps.google.com/?q=${currentLocation.latitude},${currentLocation.longitude}` : 'Unknown'}\n\n`;
-    
+
     if (destinationText) {
       message += `Current journey: Heading to ${destinationText}\n`;
     }
-    
+
     message += `\nPlease contact emergency services immediately.`;
-    
+
     return message;
   };
 
@@ -824,15 +824,15 @@ const JourneyTracker = () => {
     // Calculate journey stats
     const endTime = new Date();
     const journeyDuration = journeyStartTime ? Math.floor((endTime - journeyStartTime) / 60000) : 0; // in minutes
-    
+
     let summaryMessage = `Your journey has ended safely.\n\nDestination: ${destinationText}\nJourney Duration: ${journeyDuration} minutes\nDistance Traveled: ${distance ? (typeof distance === 'number' ? distance.toFixed(2) + ' km' : distance) : 'Unknown'}`;
-    
+
     // Add safety information if available
     if (safetyData && routeSafetyScores[selectedRouteIndex]) {
       const safetyScore = routeSafetyScores[selectedRouteIndex];
       summaryMessage += `\nRoute Safety Score: ${safetyScore.toFixed(1)}/10`;
     }
-    
+
     Alert.alert(
       'Journey Summary',
       summaryMessage,
@@ -859,14 +859,14 @@ const JourneyTracker = () => {
       Alert.alert('No Route', 'There is no route to export');
       return;
     }
-    
+
     try {
       // Create CSV content
       let csvContent = "Latitude,Longitude\n";
       route.forEach(point => {
         csvContent += `${point.latitude},${point.longitude}\n`;
       });
-      
+
       // Share the data
       await Share.share({
         title: 'Route Coordinates',
@@ -881,7 +881,7 @@ const JourneyTracker = () => {
   // Get safety category color
   const getSafetyCategoryColor = (score) => {
     if (!score && score !== 0) return '#CCC'; // Gray for unknown
-    
+
     if (score >= 7.5) return '#4CAF50'; // Green for high safety
     if (score >= 5) return '#FFA000'; // Amber for medium safety
     return '#FF4444'; // Red for low safety
@@ -890,7 +890,7 @@ const JourneyTracker = () => {
   // Render header with title and back button
   const renderHeader = () => (
     <View style={styles.header}>
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.backButton}
         onPress={() => navigation.goBack()}
       >
@@ -920,9 +920,9 @@ const JourneyTracker = () => {
           <Ionicons name="locate" size={20} color="#666" />
         </TouchableOpacity>
       </View>
-      
+
       <View style={styles.separator} />
-      
+
       <View style={styles.inputRow}>
         <Ionicons name="flag" size={20} color="#FF4444" />
         <TextInput
@@ -941,42 +941,42 @@ const JourneyTracker = () => {
   // Render travel mode selector
   const renderTravelModes = () => (
     <View style={styles.travelModeContainer}>
-      <TouchableOpacity 
+      <TouchableOpacity
         style={[styles.modeButton, travelMode === 'driving' && styles.modeButtonActive]}
         onPress={() => setTravelMode('driving')}
       >
-        <MaterialIcons 
-          name="directions-car" 
-          size={20} 
-          color={travelMode === 'driving' ? '#FFF' : '#666'} 
+        <MaterialIcons
+          name="directions-car"
+          size={20}
+          color={travelMode === 'driving' ? '#FFF' : '#666'}
         />
         <Text style={[styles.modeText, travelMode === 'driving' && styles.modeTextActive]}>
           Driving
         </Text>
       </TouchableOpacity>
-      
-      <TouchableOpacity 
+
+      <TouchableOpacity
         style={[styles.modeButton, travelMode === 'walking' && styles.modeButtonActive]}
         onPress={() => setTravelMode('walking')}
       >
-        <MaterialIcons 
-          name="directions-walk" 
-          size={20} 
-          color={travelMode === 'walking' ? '#FFF' : '#666'} 
+        <MaterialIcons
+          name="directions-walk"
+          size={20}
+          color={travelMode === 'walking' ? '#FFF' : '#666'}
         />
         <Text style={[styles.modeText, travelMode === 'walking' && styles.modeTextActive]}>
           Walking
         </Text>
       </TouchableOpacity>
-      
-      <TouchableOpacity 
+
+      <TouchableOpacity
         style={[styles.modeButton, travelMode === 'bicycling' && styles.modeButtonActive]}
         onPress={() => setTravelMode('bicycling')}
       >
-        <MaterialIcons 
-          name="directions-bike" 
-          size={20} 
-          color={travelMode === 'bicycling' ? '#FFF' : '#666'} 
+        <MaterialIcons
+          name="directions-bike"
+          size={20}
+          color={travelMode === 'bicycling' ? '#FFF' : '#666'}
         />
         <Text style={[styles.modeText, travelMode === 'bicycling' && styles.modeTextActive]}>
           Cycling
@@ -988,9 +988,9 @@ const JourneyTracker = () => {
   // Render route options (when multiple routes are available)
   const renderRouteOptions = () => {
     if (routes.length <= 1) return null;
-    
+
     return (
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.routeOptionsButton}
         onPress={() => setShowRouteOptions(true)}
       >
@@ -1012,7 +1012,7 @@ const JourneyTracker = () => {
         </View>
       );
     }
-    
+
     if (loadingSafety) {
       return (
         <View style={styles.safetyInfoContainer}>
@@ -1021,7 +1021,7 @@ const JourneyTracker = () => {
         </View>
       );
     }
-    
+
     if (!safetyData || !routeSafetyScores[selectedRouteIndex]) {
       return (
         <View style={styles.safetyInfoContainer}>
@@ -1035,18 +1035,18 @@ const JourneyTracker = () => {
         </View>
       );
     }
-    
+
     const safetyScore = routeSafetyScores[selectedRouteIndex];
     const safetyColor = getSafetyCategoryColor(safetyScore);
-    
+
     // Determine text based on safety score
     let safetyText = "Unknown Safety";
     if (safetyScore >= 7.5) safetyText = "High Safety Area";
     else if (safetyScore >= 5) safetyText = "Moderate Safety Area";
     else if (safetyScore > 0) safetyText = "Exercise Caution";
-    
+
     return (
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.safetyInfoContainer}
         onPress={() => setShowSafetyInfoModal(true)}
       >
@@ -1069,7 +1069,7 @@ const JourneyTracker = () => {
   // Render safety notification that appears when safer route is automatically selected
   const renderSafetyNotice = () => {
     if (!showSafetyNotice) return null;
-    
+
     return (
       <View style={styles.safetyNoticeContainer}>
         <View style={styles.safetyNoticeContent}>
@@ -1101,7 +1101,7 @@ const JourneyTracker = () => {
               <Ionicons name="close" size={24} color="#666" />
             </TouchableOpacity>
           </View>
-          
+
           <ScrollView style={styles.safetyModalContent}>
             {safetyData && routeSafetyScores[selectedRouteIndex] && (
               <>
@@ -1111,38 +1111,38 @@ const JourneyTracker = () => {
                   </Text>
                   <Text style={styles.safetyScoreLabel}>Safety Score</Text>
                   <View style={styles.safetyScoreBar}>
-                    <View 
+                    <View
                       style={[
-                        styles.safetyScoreFill, 
-                        { 
+                        styles.safetyScoreFill,
+                        {
                           width: `${Math.min(100, (routeSafetyScores[selectedRouteIndex] || 0) * 10)}%`,
                           backgroundColor: getSafetyCategoryColor(routeSafetyScores[selectedRouteIndex])
                         }
-                      ]} 
+                      ]}
                     />
                   </View>
                 </View>
-                
+
                 <View style={styles.safetyExplanationSection}>
                   <Text style={styles.sectionHeading}>Safety Information</Text>
                   <Text style={styles.safetyExplanationText}>
-                    {(safetyData.recommendedRoute?.safetyAnalysisExplanation?.summary) || 
+                    {(safetyData.recommendedRoute?.safetyAnalysisExplanation?.summary) ||
                       "This safety analysis is based on multiple factors including street lighting, police presence, population density, and historical incident data."}
                   </Text>
                 </View>
-                
+
                 <View style={styles.safetyFactorsSection}>
                   <Text style={styles.sectionHeading}>Key Safety Factors</Text>
-                  
+
                   <View style={styles.safetyFactorItem}>
                     <Ionicons name={isNightTime ? "moon" : "sunny"} size={18} color={isNightTime ? "#5C6BC0" : "#FFA000"} style={styles.factorIcon} />
                     <Text style={styles.factorText}>
-                      {isNightTime 
+                      {isNightTime
                         ? "Night time journey - reduced visibility, fewer people on streets"
                         : "Day time journey - good visibility, more people on streets"}
                     </Text>
                   </View>
-                  
+
                   {safetyData.recommendedRoute?.safetyAnalysisExplanation?.keyFactors ? (
                     safetyData.recommendedRoute.safetyAnalysisExplanation.keyFactors.map((factor, index) => (
                       <View key={index} style={styles.safetyFactorItem}>
@@ -1167,27 +1167,27 @@ const JourneyTracker = () => {
                     </>
                   )}
                 </View>
-                
+
                 <View style={styles.safetyRecommendationsSection}>
                   <Text style={styles.sectionHeading}>Safety Recommendations</Text>
-                  
+
                   <View style={styles.safetyFactorItem}>
                     <Ionicons name="alert-circle" size={18} color="#FFA000" style={styles.factorIcon} />
                     <Text style={styles.factorText}>Stay aware of your surroundings at all times</Text>
                   </View>
-                  
+
                   <View style={styles.safetyFactorItem}>
                     <Ionicons name="share-social" size={18} color="#4285F4" style={styles.factorIcon} />
                     <Text style={styles.factorText}>Share your journey status with trusted contacts</Text>
                   </View>
-                  
+
                   {isNightTime && (
                     <View style={styles.safetyFactorItem}>
                       <Ionicons name="flashlight" size={18} color="#FFA000" style={styles.factorIcon} />
                       <Text style={styles.factorText}>Use your phone's flashlight in poorly lit areas</Text>
                     </View>
                   )}
-                  
+
                   <View style={styles.safetyFactorItem}>
                     <Ionicons name="call" size={18} color="#4CAF50" style={styles.factorIcon} />
                     <Text style={styles.factorText}>Keep your phone accessible for emergencies</Text>
@@ -1217,16 +1217,16 @@ const JourneyTracker = () => {
               <Ionicons name="close" size={24} color="#666" />
             </TouchableOpacity>
           </View>
-          
+
           <ScrollView>
             {routes.map((route, index) => {
-              const isSafest = safetyData && 
-                              safetyData.recommendedRoute && 
-                              safetyData.recommendedRoute.routeIndex === index;
-              
+              const isSafest = safetyData &&
+                safetyData.recommendedRoute &&
+                safetyData.recommendedRoute.routeIndex === index;
+
               const safetyScore = routeSafetyScores[index];
               const safetyColor = getSafetyCategoryColor(safetyScore);
-              
+
               return (
                 <TouchableOpacity
                   key={index}
@@ -1262,8 +1262,8 @@ const JourneyTracker = () => {
                 </TouchableOpacity>
               );
             })}
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.exportButton}
               onPress={exportRouteCoordinates}
             >
@@ -1292,7 +1292,7 @@ const JourneyTracker = () => {
               <Ionicons name="close" size={24} color="#666" />
             </TouchableOpacity>
           </View>
-          
+
           {loading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="#FFB5D8" />
@@ -1328,7 +1328,7 @@ const JourneyTracker = () => {
   return (
     <SafeAreaView style={styles.container}>
       {renderHeader()}
-      
+
       <View style={styles.mapContainer}>
         {origin ? (
           <MapView
@@ -1345,13 +1345,13 @@ const JourneyTracker = () => {
             followsUserLocation
           >
             {destination && (
-              <Marker 
+              <Marker
                 coordinate={destination}
                 title="Destination"
                 pinColor="red"
               />
             )}
-            
+
             {route && (
               <Polyline
                 coordinates={route}
@@ -1359,10 +1359,10 @@ const JourneyTracker = () => {
                 strokeColor="#4285F4"
               />
             )}
-            
+
             {intermediatePlaces.map((place, index) => {
               if (place.isStart || place.isEnd) return null; // Skip start/end points as they're the same as origin/destination
-              
+
               return (
                 <Marker
                   key={`place-${index}`}
@@ -1379,19 +1379,19 @@ const JourneyTracker = () => {
             <Text style={styles.loadingMapText}>Loading map...</Text>
           </View>
         )}
-        
+
         {renderSafetyNotice()}
       </View>
-      
+
       <View style={styles.controlsContainer}>
         {renderLocationInputs()}
         {renderTravelModes()}
         {renderRouteOptions()}
         {renderSafetyInfo()}
-        
+
         <View style={styles.buttonContainer}>
           {!isTracking ? (
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.startButton}
               onPress={handleStartJourney}
             >
@@ -1399,7 +1399,7 @@ const JourneyTracker = () => {
               <Ionicons name="play" size={20} color="#FFF" />
             </TouchableOpacity>
           ) : (
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.stopButton}
               onPress={stopLocationTracking}
             >
@@ -1407,8 +1407,8 @@ const JourneyTracker = () => {
               <Ionicons name="stop" size={20} color="#FFF" />
             </TouchableOpacity>
           )}
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.sosButton}
             onPress={handleSOS}
           >
@@ -1416,7 +1416,7 @@ const JourneyTracker = () => {
           </TouchableOpacity>
         </View>
       </View>
-      
+
       {/* Render modals */}
       {renderSafetyInfoModal()}
       {renderRouteOptionsModal()}

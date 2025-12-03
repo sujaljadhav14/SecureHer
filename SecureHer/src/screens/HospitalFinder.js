@@ -10,7 +10,7 @@ import {
   Platform,
   Linking
 } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_GOOGLE } from '../components/Map';
 import * as Location from 'expo-location';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { getDistance } from 'geolib';
@@ -59,7 +59,7 @@ const HospitalFinder = () => {
       );
 
       const data = await response.json();
-      
+
       if (data.status === 'OK') {
         const nearbyHospitals = data.results.map(hospital => ({
           id: hospital.place_id,
@@ -71,9 +71,9 @@ const HospitalFinder = () => {
           isOpen: hospital.opening_hours?.open_now,
           distance: getDistance(
             { latitude, longitude },
-            { 
-              latitude: hospital.geometry.location.lat, 
-              longitude: hospital.geometry.location.lng 
+            {
+              latitude: hospital.geometry.location.lat,
+              longitude: hospital.geometry.location.lng
             }
           )
         }));
@@ -110,7 +110,7 @@ const HospitalFinder = () => {
       ios: '102',
       android: '102'
     });
-    
+
     Linking.openURL(`tel:${emergencyNumber}`).catch(() => {
       Alert.alert('Error', 'Could not open phone application');
     });
@@ -137,14 +137,14 @@ const HospitalFinder = () => {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Nearby Hospitals</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.emergencyCallButton}
           onPress={callEmergency}
         >
@@ -187,9 +187,9 @@ const HospitalFinder = () => {
               onPress={() => setSelectedHospital(hospital)}
             >
               <View style={styles.markerContainer}>
-                <FontAwesome5 
-                  name="hospital" 
-                  size={24} 
+                <FontAwesome5
+                  name="hospital"
+                  size={24}
                   color="#FF4444"
                   style={styles.hospitalIcon}
                 />
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#EEE',
-    paddingTop:45,
+    paddingTop: 45,
   },
   backButton: {
     padding: 8,
