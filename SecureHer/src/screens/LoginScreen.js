@@ -33,7 +33,7 @@ export default function LoginScreen() {
   const [secureTextEntry, setSecureTextEntry] = useState(true);
   const navigation = useNavigation();
   const pinRefs = Array(6).fill(0).map(() => React.createRef());
-  
+
   // Animation values
   const fadeAnim = useState(new Animated.Value(0))[0];
   const slideAnim = useState(new Animated.Value(50))[0];
@@ -86,32 +86,32 @@ export default function LoginScreen() {
       Alert.alert(t('errors.fill_all_fields'), t('auth.enter_mobile'));
       return;
     }
-    
+
     const pinString = pin.join('');
     if (pinString.length !== 6) {
       Alert.alert(t('errors.invalid_pin'), t('auth.create_pin_description'));
       return;
     }
-    
+
     setLoading(true);
     try {
       // Format the mobile number (remove any spaces or special characters)
       const formattedMobile = mobileNumber.replace(/\D/g, '');
-      
+
       const response = await axios.post(
-       'https://womensafety-1-5znp.onrender.com/users/signin',
+        'https://womensafety-1-5znp.onrender.com/users/signin',
         {
           mobileNumber: formattedMobile,
           pin: pinString
         }
       );
-      
+
       if (response.data && response.data.token) {
         // Store user data
         await AsyncStorage.setItem('userToken', response.data.token);
         await AsyncStorage.setItem('userData', JSON.stringify(response.data.user));
         await AsyncStorage.setItem('lastMobileNumber', formattedMobile);
-        
+
         // Navigate to home screen
         navigation.reset({
           index: 0,
@@ -122,7 +122,7 @@ export default function LoginScreen() {
       }
     } catch (error) {
       console.error('Login error:', error.response?.data || error.message);
-      
+
       const errorMessage = error.response?.data?.message || t('errors.network_error');
       Alert.alert(t('errors.login_failed'), errorMessage);
     } finally {
@@ -132,6 +132,13 @@ export default function LoginScreen() {
 
   const handleSignup = () => {
     navigation.navigate('Signup');
+  };
+
+  const handleGuestLogin = () => {
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'HomeScreen' }],
+    });
   };
 
   const handleForgotPin = () => {
@@ -149,12 +156,12 @@ export default function LoginScreen() {
             if (mobileNumber) {
               // Navigate to PIN reset screen or initiate the PIN reset flow
               Alert.alert(
-                t('auth.pin_reset', 'PIN Reset'), 
+                t('auth.pin_reset', 'PIN Reset'),
                 t('auth.otp_will_be_sent', 'An OTP will be sent to your mobile number to reset your PIN.')
               );
             } else {
               Alert.alert(
-                t('errors.mobile_required', 'Mobile Number Required'), 
+                t('errors.mobile_required', 'Mobile Number Required'),
                 t('errors.enter_mobile_first', 'Please enter your mobile number first.')
               );
             }
@@ -178,10 +185,10 @@ export default function LoginScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.container}
       >
-        <Animated.View 
+        <Animated.View
           style={[
-            styles.content, 
-            { 
+            styles.content,
+            {
               opacity: fadeAnim,
               transform: [{ translateY: slideAnim }]
             }
@@ -243,10 +250,10 @@ export default function LoginScreen() {
                 style={styles.secureTextButton}
                 onPress={toggleSecureTextEntry}
               >
-                <Ionicons 
-                  name={secureTextEntry ? "eye-outline" : "eye-off-outline"} 
-                  size={20} 
-                  color="#666" 
+                <Ionicons
+                  name={secureTextEntry ? "eye-outline" : "eye-off-outline"}
+                  size={20}
+                  color="#666"
                 />
               </TouchableOpacity>
             </View>
@@ -256,8 +263,8 @@ export default function LoginScreen() {
             </TouchableOpacity>
 
             {/* Login Button */}
-            <TouchableOpacity 
-              style={styles.loginButton} 
+            <TouchableOpacity
+              style={styles.loginButton}
               onPress={handleLogin}
               disabled={loading}
             >
@@ -296,6 +303,16 @@ export default function LoginScreen() {
                 <Text style={styles.signupLink}>{t('auth.signup')}</Text>
               </TouchableOpacity>
             </View>
+
+            {/* Guest Mode Button */}
+            <TouchableOpacity
+              style={{ marginTop: 20, alignSelf: 'center' }}
+              onPress={handleGuestLogin}
+            >
+              <Text style={{ color: '#999', textDecorationLine: 'underline' }}>
+                Continue as Guest (Dev Mode)
+              </Text>
+            </TouchableOpacity>
           </View>
         </Animated.View>
       </KeyboardAvoidingView>
@@ -321,7 +338,7 @@ const styles = StyleSheet.create({
     top: Platform.OS === 'ios' ? 40 : 20,
     right: 20,
     zIndex: 100,
-    paddingTop:30
+    paddingTop: 30
   },
   logoContainer: {
     alignItems: 'center',
