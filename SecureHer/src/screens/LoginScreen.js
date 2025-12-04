@@ -22,6 +22,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslations } from '../hooks/useTranslations';
 import LanguageSelector from '../components/LanguageSelector';
+import { API_URL } from '../config';
 
 const { width } = Dimensions.get('window');
 
@@ -99,7 +100,7 @@ export default function LoginScreen() {
       const formattedMobile = mobileNumber.replace(/\D/g, '');
 
       const response = await axios.post(
-        'https://womensafety-1-5znp.onrender.com/users/signin',
+        `${API_URL}/users/signin`,
         {
           mobileNumber: formattedMobile,
           pin: pinString

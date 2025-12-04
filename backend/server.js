@@ -6,6 +6,8 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const http = require('http');
 const { Server } = require('socket.io');
+const userRoutes = require('./routes/userRoutes');
+const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 
 const app = express();
 const server = http.createServer(app);
@@ -23,9 +25,14 @@ app.use(helmet());
 app.use(morgan('dev'));
 
 // Database Connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/secureher')
-    .then(() => console.log('✅ MongoDB Connected'))
+// For MVP: Force local connection to avoid broken .env issues
+const MONGODB_URI = 'mongodb://127.0.0.1:27017/secureher';
+mongoose.connect(MONGODB_URI)
+    .then(() => console.log('✅ MongoDB Connected (Local)'))
     .catch(err => console.error('❌ MongoDB Connection Error:', err));
+
+// Routes
+app.use('/users', userRoutes);
 
 // Socket.io Connection
 io.on('connection', (socket) => {
@@ -47,6 +54,10 @@ io.on('connection', (socket) => {
 app.get('/', (req, res) => {
     res.send('SecureHer Backend is Running 🚀');
 });
+
+// Error Handling
+// app.use(notFound);
+// app.use(errorHandler);
 
 // Start Server
 const PORT = process.env.PORT || 5000;
