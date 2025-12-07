@@ -110,7 +110,7 @@ export default function LoginScreen() {
       if (response.data && response.data.token) {
         // Store user data
         await AsyncStorage.setItem('userToken', response.data.token);
-        await AsyncStorage.setItem('userData', JSON.stringify(response.data.user));
+        await AsyncStorage.setItem('userData', JSON.stringify(response.data));
         await AsyncStorage.setItem('lastMobileNumber', formattedMobile);
 
         // Navigate to home screen
@@ -202,7 +202,7 @@ export default function LoginScreen() {
 
           {/* App Logo */}
           <View style={styles.logoContainer}>
-            <Text style={styles.logoText}>VithU</Text>
+            <Text style={styles.logoText}>SecureHer</Text>
             <Text style={styles.logoSubtitle}>{t('home.your_safety_companion', 'Your safety companion')}</Text>
           </View>
 

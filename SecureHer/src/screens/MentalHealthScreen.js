@@ -21,12 +21,12 @@ import useSentimentAnalysis from '../hooks/useSentimentAnalysis';
 
 const MentalHealthChat = () => {
   const navigation = useNavigation();
-  const { 
-    initializeChatbot, 
-    sendChatbotMessage, 
-    getMentalHealthResources 
+  const {
+    initializeChatbot,
+    sendChatbotMessage,
+    getMentalHealthResources
   } = useSentimentAnalysis();
-  
+
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(true);
@@ -34,19 +34,19 @@ const MentalHealthChat = () => {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [resources, setResources] = useState([]);
   const [resourcesModalVisible, setResourcesModalVisible] = useState(false);
-  
+
   const flatListRef = useRef(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  
+
   // Initialize chat
   useEffect(() => {
     const setupChat = async () => {
       try {
         setInitializing(true);
-        
+
         // Get initial message from chatbot
         const greeting = await initializeChatbot();
-        
+
         // Add initial message
         setMessages([
           {
@@ -56,11 +56,11 @@ const MentalHealthChat = () => {
             timestamp: new Date().toISOString()
           }
         ]);
-        
+
         // Load resources
         const mentalHealthResources = await getMentalHealthResources();
         setResources(mentalHealthResources);
-        
+
         // Fade in animation
         Animated.timing(fadeAnim, {
           toValue: 1,
@@ -69,7 +69,7 @@ const MentalHealthChat = () => {
         }).start();
       } catch (error) {
         console.error('Error setting up chat:', error);
-        
+
         // Add fallback message if setup fails
         setMessages([
           {
@@ -84,10 +84,10 @@ const MentalHealthChat = () => {
         setLoading(false);
       }
     };
-    
+
     setupChat();
   }, []);
-  
+
   // Scroll to bottom when new messages are added
   useEffect(() => {
     if (messages.length > 0 && flatListRef.current) {
@@ -97,13 +97,13 @@ const MentalHealthChat = () => {
       }, 200);
     }
   }, [messages]);
-  
+
   const handleSendMessage = async () => {
     if (!inputText.trim() || sendingMessage) return;
-    
+
     const userMessage = inputText.trim();
     setInputText('');
-    
+
     // Add user message to state
     const newUserMessage = {
       id: Date.now().toString(),
@@ -111,16 +111,16 @@ const MentalHealthChat = () => {
       sender: 'user',
       timestamp: new Date().toISOString()
     };
-    
+
     setMessages(prevMessages => [...prevMessages, newUserMessage]);
-    
+
     // Show typing indicator
     setSendingMessage(true);
-    
+
     try {
       // Get response from chatbot
       const response = await sendChatbotMessage(userMessage);
-      
+
       // Add assistant message to state
       const newAssistantMessage = {
         id: (Date.now() + 1).toString(),
@@ -128,11 +128,11 @@ const MentalHealthChat = () => {
         sender: 'assistant',
         timestamp: new Date().toISOString()
       };
-      
+
       setMessages(prevMessages => [...prevMessages, newAssistantMessage]);
     } catch (error) {
       console.error('Error sending message:', error);
-      
+
       // Add error message
       const errorMessage = {
         id: (Date.now() + 1).toString(),
@@ -140,13 +140,13 @@ const MentalHealthChat = () => {
         sender: 'assistant',
         timestamp: new Date().toISOString()
       };
-      
+
       setMessages(prevMessages => [...prevMessages, errorMessage]);
     } finally {
       setSendingMessage(false);
     }
   };
-  
+
   const handleResourcePress = (resource) => {
     // Handle different resource types
     if (resource.type === 'hotline' && resource.contactInfo) {
@@ -170,15 +170,15 @@ const MentalHealthChat = () => {
       Linking.openURL(url);
     }
   };
-  
+
   const formatTime = (timestamp) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
-  
+
   const renderMessage = ({ item }) => {
     const isUser = item.sender === 'user';
-    
+
     return (
       <View style={[
         styles.messageContainer,
@@ -199,7 +199,7 @@ const MentalHealthChat = () => {
       </View>
     );
   };
-  
+
   // Render resources modal
   const renderResourcesModal = () => (
     <Modal
@@ -212,14 +212,14 @@ const MentalHealthChat = () => {
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Mental Health Resources</Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.closeButton}
               onPress={() => setResourcesModalVisible(false)}
             >
               <Ionicons name="close" size={24} color="#000" />
             </TouchableOpacity>
           </View>
-          
+
           <ScrollView style={styles.resourcesContainer}>
             {resources.length > 0 ? (
               resources.map((resource, index) => (
@@ -229,15 +229,15 @@ const MentalHealthChat = () => {
                   onPress={() => handleResourcePress(resource)}
                 >
                   <View style={styles.resourceIcon}>
-                    <Ionicons 
+                    <Ionicons
                       name={
-                        resource.type === 'hotline' ? "call-outline" : 
-                        resource.type === 'website' ? "globe-outline" : 
-                        resource.type === 'app' ? "phone-portrait-outline" : 
-                        "information-circle-outline"
-                      } 
-                      size={24} 
-                      color="#FFB5D8" 
+                        resource.type === 'hotline' ? "call-outline" :
+                          resource.type === 'website' ? "globe-outline" :
+                            resource.type === 'app' ? "phone-portrait-outline" :
+                              "information-circle-outline"
+                      }
+                      size={24}
+                      color="#FFB5D8"
                     />
                   </View>
                   <View style={styles.resourceInfo}>
@@ -255,7 +255,7 @@ const MentalHealthChat = () => {
               </View>
             )}
           </ScrollView>
-          
+
           <View style={styles.modalFooter}>
             <Text style={styles.disclaimerText}>
               If you're experiencing an emergency, please call 112 immediately.
@@ -265,7 +265,7 @@ const MentalHealthChat = () => {
       </View>
     </Modal>
   );
-  
+
   if (loading) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
@@ -276,26 +276,26 @@ const MentalHealthChat = () => {
       </SafeAreaView>
     );
   }
-  
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Healing Journey</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.resourcesButton}
           onPress={() => setResourcesModalVisible(true)}
         >
           <MaterialIcons name="help-outline" size={24} color="#FFB5D8" />
         </TouchableOpacity>
       </View>
-      
-      <Animated.View 
+
+      <Animated.View
         style={[styles.chatContainer, { opacity: fadeAnim }]}
       >
         <FlatList
@@ -305,11 +305,11 @@ const MentalHealthChat = () => {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.messagesList}
         />
-        
+
         {sendingMessage && (
           <View style={styles.typingIndicator}>
             <View style={styles.typingBubble}>
-              <Text style={styles.typingText}>VithU is typing</Text>
+              <Text style={styles.typingText}>SecureHer is typing</Text>
               <View style={styles.typingDots}>
                 <View style={[styles.typingDot, styles.typingDot1]} />
                 <View style={[styles.typingDot, styles.typingDot2]} />
@@ -319,7 +319,7 @@ const MentalHealthChat = () => {
           </View>
         )}
       </Animated.View>
-      
+
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
@@ -349,7 +349,7 @@ const MentalHealthChat = () => {
           />
         </TouchableOpacity>
       </KeyboardAvoidingView>
-      
+
       {/* Resources Modal */}
       {renderResourcesModal()}
     </SafeAreaView>

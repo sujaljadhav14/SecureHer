@@ -37,29 +37,29 @@ export default function Dashboard() {
     const fetchDashboardData = async () => {
       try {
         setIsLoading(true);
-        
+
         // Fetch incidents
         const incidentsResponse = await fetch('https://womensafety-1-5znp.onrender.com/admin/getAllIncidents', {
           cache: 'no-store'
         });
-        
+
         if (!incidentsResponse.ok) {
           throw new Error(`Incidents API error: ${incidentsResponse.status}`);
         }
-        
+
         const incidentsData = await incidentsResponse.json();
-        
+
         // Fetch users
         const usersResponse = await fetch('https://womensafety-1-5znp.onrender.com/admin/getAllUsers', {
           cache: 'no-store'
         });
-        
+
         if (!usersResponse.ok) {
           throw new Error(`Users API error: ${usersResponse.status}`);
         }
-        
+
         const usersData = await usersResponse.json();
-        
+
         // Fetch safety zones/locations for heatmap
         const safetyResponse = await fetch('/api/safety', {
           cache: 'no-store'
@@ -67,7 +67,7 @@ export default function Dashboard() {
           console.warn("Safety data API unavailable, using mock data");
           return { ok: false };
         });
-        
+
         let safetyData = [];
         if (safetyResponse.ok) {
           safetyData = await safetyResponse.json();
@@ -79,12 +79,12 @@ export default function Dashboard() {
             { lat: "19.0625", lon: "72.8657", safetyRating: "8" }
           ];
         }
-        
+
         // Process incidents data for stats and recent incidents
         const activeIncidents = incidentsData.filter(inc => inc.status?.toLowerCase() === 'active');
         const pendingIncidents = incidentsData.filter(inc => inc.status?.toLowerCase() === 'in progress' || inc.status?.toLowerCase() === 'pending');
         const resolvedIncidents = incidentsData.filter(inc => inc.status?.toLowerCase() === 'resolved');
-        
+
         // Set the stats
         setStats({
           activeAlerts: activeIncidents.length,
@@ -92,7 +92,7 @@ export default function Dashboard() {
           resolvedCases: resolvedIncidents.length,
           registeredUsers: usersData.length || 0
         });
-        
+
         // Process the most recent 5 incidents
         const recent = [...incidentsData]
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
@@ -106,26 +106,26 @@ export default function Dashboard() {
             timestamp: incident.createdAt,
             status: incident.status?.toLowerCase() || "unknown"
           }));
-        
+
         setRecentIncidents(recent);
-        
+
         // Process heatmap data
         const heatmapPoints = safetyData.map(location => ({
           lat: parseFloat(location.lat),
           lng: parseFloat(location.lon),
           intensity: 10 - parseInt(location.safetyRating) // Invert safety rating for heatmap intensity
         }));
-        
+
         setHeatmapData(heatmapPoints);
-        
+
         // Generate recent activity feed based on data
         const activities = [];
-        
+
         // Add recent user registrations
         const recentUsers = [...usersData]
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
           .slice(0, 3);
-          
+
         recentUsers.forEach(user => {
           activities.push({
             type: 'user_registered',
@@ -134,12 +134,12 @@ export default function Dashboard() {
             id: user._id
           });
         });
-        
+
         // Add recent incident status changes
         const recentResolved = [...resolvedIncidents]
           .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
           .slice(0, 2);
-          
+
         recentResolved.forEach(incident => {
           activities.push({
             type: 'incident_resolved',
@@ -148,13 +148,13 @@ export default function Dashboard() {
             id: incident._id
           });
         });
-        
+
         // Add recent SOS alerts
         const recentSOS = [...incidentsData]
           .filter(inc => inc.type?.toLowerCase() === 'sos')
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
           .slice(0, 2);
-          
+
         recentSOS.forEach(incident => {
           activities.push({
             type: 'sos_alert',
@@ -163,16 +163,16 @@ export default function Dashboard() {
             id: incident._id
           });
         });
-        
+
         // Sort all activities by timestamp
         const sortedActivities = activities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
         setRecentActivities(sortedActivities);
-        
+
         setError(null);
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
         setError(err.message);
-        
+
         // Set fallback mock data
         setStats({
           activeAlerts: 5,
@@ -186,10 +186,10 @@ export default function Dashboard() {
     };
 
     fetchDashboardData();
-    
+
     // Set up refresh interval (every 5 minutes)
     const refreshInterval = setInterval(fetchDashboardData, 5 * 60 * 1000);
-    
+
     return () => clearInterval(refreshInterval);
   }, []);
 
@@ -211,18 +211,18 @@ export default function Dashboard() {
     const date = new Date(dateString);
     return `${date.toLocaleDateString()} at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
   };
-  
+
   const getTimeElapsed = (dateString) => {
     const date = new Date(dateString);
     const now = new Date();
     const diffMs = now - date;
-    
+
     const minutes = Math.floor(diffMs / 60000);
     if (minutes < 60) return `${minutes} min ago`;
-    
+
     const hours = Math.floor(minutes / 60);
     if (hours < 24) return `${hours} hours ago`;
-    
+
     const days = Math.floor(hours / 24);
     if (days === 1) return "1 day ago";
     return `${days} days ago`;
@@ -317,7 +317,7 @@ export default function Dashboard() {
   return (
     <div className="p-6">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-800">VithU Dashboard</h1>
+        <h1 className="text-2xl font-bold text-gray-800">SecureHer Dashboard</h1>
         <p className="text-gray-600">Overview and real-time monitoring</p>
         {error && (
           <div className="mt-2 text-sm text-amber-600 bg-amber-50 p-2 rounded-md">

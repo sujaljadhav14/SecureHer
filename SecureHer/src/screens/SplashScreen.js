@@ -16,7 +16,7 @@ export default function SplashScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.logo}>VithU</Text>
+      <Text style={styles.logo}>SecureHer</Text>
     </View>
   );
 }

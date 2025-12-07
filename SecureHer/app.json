@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "vithU",
-    "slug": "vithU",
+    "name": "SecureHer",
+    "slug": "SecureHer",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -18,7 +18,6 @@
         {
           "icon": "./assets/icon.png",
           "color": "#FFB5D8"
-          
         }
       ]
     ],
@@ -40,7 +39,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.gauravv.pawar.vithU",
+      "package": "com.gauravv.pawar.SecureHer",
       "permissions": [
         "VIBRATE",
         "ACCESS_FINE_LOCATION",

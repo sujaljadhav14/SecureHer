@@ -78,8 +78,8 @@ SecureHer is a comprehensive women's safety mobile application designed to provi
 
 1. Clone the repository
 ```bash
-git clone https://github.com/yourusername/vithu-app.git
-cd vithu-app
+git clone https://github.com/yourusername/SecureHer-app.git
+cd SecureHer-app
 ```
 
 2. Install dependencies

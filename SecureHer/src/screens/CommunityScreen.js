@@ -26,19 +26,19 @@ import useSentimentAnalysis from '../hooks/useSentimentAnalysis';
 const CommunityScreen = () => {
   const navigation = useNavigation();
   const flatListRef = useRef(null);
-  
+
   // Sentiment Analysis Hook
-  const { 
-    analyzePost, 
-    analyzing, 
-    analysis, 
-    tagConsistency, 
+  const {
+    analyzePost,
+    analyzing,
+    analysis,
+    tagConsistency,
     getSuggestedTags,
     recordInteraction,
     needsSupport,
-    shouldTriggerSupport 
+    shouldTriggerSupport
   } = useSentimentAnalysis();
-  
+
   // States
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -59,7 +59,7 @@ const CommunityScreen = () => {
   const [commentText, setCommentText] = useState('');
   const [comments, setComments] = useState({});
   const [loadingComments, setLoadingComments] = useState(false);
-  
+
   // Sentiment analysis specific states
   const [analyzingPost, setAnalyzingPost] = useState(false);
   const [suggestedTags, setSuggestedTags] = useState([]);
@@ -68,7 +68,7 @@ const CommunityScreen = () => {
 
   // Common locations in India
   const commonLocations = [
-    'Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 
+    'Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai',
     'Kolkata', 'Pune', 'Ahmedabad', 'Jaipur', 'Surat',
     'Lucknow', 'Kanpur', 'Nagpur', 'Indore', 'Thane',
     'Bhopal', 'Visakhapatnam', 'Patna', 'Vadodara', 'Ghaziabad'
@@ -83,7 +83,7 @@ const CommunityScreen = () => {
   useEffect(() => {
     fetchPosts();
     loadLikedPosts();
-    
+
     // Check if support should be triggered on component mount
     const checkSupportNeeded = async () => {
       const needsHelp = await shouldTriggerSupport();
@@ -91,7 +91,7 @@ const CommunityScreen = () => {
         setSupportModalVisible(true);
       }
     };
-    
+
     checkSupportNeeded();
   }, []);
 
@@ -118,7 +118,7 @@ const CommunityScreen = () => {
     try {
       setLoading(true);
       const token = await AsyncStorage.getItem('userToken');
-      
+
       if (!token) {
         Alert.alert('Error', 'You need to be logged in to view posts');
         navigation.navigate('Login');
@@ -154,7 +154,7 @@ const CommunityScreen = () => {
   const pickImage = async () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
+
       if (status !== 'granted') {
         Alert.alert('Permission needed', 'Please allow access to your photo library');
         return;
@@ -178,7 +178,7 @@ const CommunityScreen = () => {
 
   const handleLocationChange = (text) => {
     setPostLocation(text);
-    
+
     if (text.length > 1) {
       const filtered = commonLocations.filter(
         location => location.toLowerCase().includes(text.toLowerCase())
@@ -222,19 +222,19 @@ const CommunityScreen = () => {
       Alert.alert('Missing information', 'Please enter your location');
       return;
     }
-    
+
     // First analyze the post content for sentiment
     setAnalyzingPost(true);
-    
+
     try {
       const postContent = {
         title: postTitle,
         description: postDescription || '',
         tags: postTags
       };
-      
+
       const sentimentResult = await analyzePost(postContent);
-      
+
       // Check if tags are consistent with content sentiment
       if (sentimentResult && !tagConsistency && postTags.length > 0) {
         // If not consistent, show tag suggestions
@@ -244,16 +244,16 @@ const CommunityScreen = () => {
         setAnalyzingPost(false);
         return;
       }
-      
+
       // Check if content is concerning and support should be offered
       if (sentimentResult && (sentimentResult.concernLevel > 7 || sentimentResult.sentiment === 'concerning')) {
         setSupportModalVisible(true);
         // Continue with post creation even if content is concerning
       }
-      
+
       // Proceed with post creation
       await submitPostToServer();
-      
+
     } catch (error) {
       console.error('Error analyzing post:', error);
       // Continue with post creation even if analysis fails
@@ -266,7 +266,7 @@ const CommunityScreen = () => {
     try {
       setUploading(true);
       const token = await AsyncStorage.getItem('userToken');
-      
+
       if (!token) {
         Alert.alert('Error', 'You need to be logged in to create a post');
         navigation.navigate('Login');
@@ -278,7 +278,7 @@ const CommunityScreen = () => {
       formData.append('title', postTitle);
       formData.append('description', postDescription || '');
       formData.append('location', postLocation);
-      
+
       // Add tags - send them as individual items instead of an array
       if (postTags.length > 0) {
         // Send tags as a comma-separated string
@@ -290,7 +290,7 @@ const CommunityScreen = () => {
         const filename = selectedImage.split('/').pop();
         const match = /\.(\w+)$/.exec(filename);
         const type = match ? `image/${match[1]}` : 'image';
-        
+
         formData.append('image', {
           uri: selectedImage,
           name: filename,
@@ -340,26 +340,26 @@ const CommunityScreen = () => {
         navigation.navigate('Login');
         return;
       }
-      
+
       // Find the post data in state
       const post = posts.find(p => p._id === postId);
       if (!post) return;
-      
+
       // Optimistic UI update
       const isCurrentlyLiked = likedPosts.includes(postId);
       let updatedLikedPosts;
-      
+
       if (isCurrentlyLiked) {
         updatedLikedPosts = likedPosts.filter(id => id !== postId);
       } else {
         updatedLikedPosts = [...likedPosts, postId];
       }
-      
+
       setLikedPosts(updatedLikedPosts);
       saveLikedPosts(updatedLikedPosts);
-      
+
       // Update post count in UI
-      setPosts(prevPosts => 
+      setPosts(prevPosts =>
         prevPosts.map(p => {
           if (p._id === postId) {
             return {
@@ -370,7 +370,7 @@ const CommunityScreen = () => {
           return p;
         })
       );
-      
+
       // Record the interaction for sentiment analysis
       if (!isCurrentlyLiked) { // Only record if it's a new like
         recordInteraction(postId, {
@@ -379,7 +379,7 @@ const CommunityScreen = () => {
           tags: post.tags || []
         }, 'like');
       }
-      
+
       // Call API to update like status
       await axios.post(
         'https://womensafety-1-5znp.onrender.com/women/like',
@@ -393,21 +393,21 @@ const CommunityScreen = () => {
       );
     } catch (error) {
       console.error('Error liking post:', error);
-      
+
       // Revert optimistic update on error
       const isCurrentlyLiked = likedPosts.includes(postId);
-      
+
       Alert.alert('Error', 'Failed to update like status. Please try again.');
-      
+
       // Revert UI changes
-      setLikedPosts(prevLikedPosts => 
-        isCurrentlyLiked 
-          ? [...prevLikedPosts, postId] 
+      setLikedPosts(prevLikedPosts =>
+        isCurrentlyLiked
+          ? [...prevLikedPosts, postId]
           : prevLikedPosts.filter(id => id !== postId)
       );
-      
+
       // Revert post count in UI
-      setPosts(prevPosts => 
+      setPosts(prevPosts =>
         prevPosts.map(post => {
           if (post._id === postId) {
             return {
@@ -426,7 +426,7 @@ const CommunityScreen = () => {
     // Find the post data in state
     const post = posts.find(p => p._id === postId);
     if (!post) return;
-    
+
     setSelectedPostId(postId);
     setCommentText('');
     await fetchComments(postId);
@@ -437,12 +437,12 @@ const CommunityScreen = () => {
     try {
       setLoadingComments(true);
       const token = await AsyncStorage.getItem('userToken');
-      
+
       if (!token) {
         Alert.alert('Error', 'You need to be logged in to view comments');
         return;
       }
-      
+
       // In a real app, you would have an API endpoint to fetch comments for a specific post
       // For now, we'll just use the comments from the post object
       const post = posts.find(p => p._id === postId);
@@ -465,21 +465,21 @@ const CommunityScreen = () => {
       Alert.alert('Empty comment', 'Please enter a comment');
       return;
     }
-    
+
     try {
       const token = await AsyncStorage.getItem('userToken');
-      
+
       if (!token) {
         Alert.alert('Error', 'You need to be logged in to comment');
         setCommentModalVisible(false);
         return;
       }
-      
+
       const response = await axios.post(
         'https://womensafety-1-5znp.onrender.com/women/comment',
-        { 
+        {
           communityId: selectedPostId,
-          text: commentText 
+          text: commentText
         },
         {
           headers: {
@@ -488,19 +488,19 @@ const CommunityScreen = () => {
           }
         }
       );
-      
+
       if (response.data && response.data.comment) {
         // Update comments in state
         const updatedComments = {
           ...comments,
           [selectedPostId]: [...(comments[selectedPostId] || []), response.data.comment]
         };
-        
+
         setComments(updatedComments);
         setCommentText('');
-        
+
         // Update posts to include the new comment
-        setPosts(prevPosts => 
+        setPosts(prevPosts =>
           prevPosts.map(post => {
             if (post._id === selectedPostId) {
               return {
@@ -511,7 +511,7 @@ const CommunityScreen = () => {
             return post;
           })
         );
-        
+
         // Record comment interaction for sentiment analysis
         const post = posts.find(p => p._id === selectedPostId);
         if (post) {
@@ -521,7 +521,7 @@ const CommunityScreen = () => {
             tags: post.tags || []
           }, 'comment');
         }
-        
+
         Alert.alert('Success', 'Comment added successfully');
       }
     } catch (error) {
@@ -529,7 +529,7 @@ const CommunityScreen = () => {
       Alert.alert('Error', 'Failed to add comment. Please try again.');
     }
   };
-  
+
   const truncateText = (text, limit = 100) => {
     return text && text.length > limit ? text.substring(0, limit) + '...' : text;
   };
@@ -538,10 +538,10 @@ const CommunityScreen = () => {
     try {
       const result = await Share.share({
         title: post.title,
-        message: `Check out this post from VithU:\n\n${post.title}\n\n${post.description || ''}\n\nLocation: ${post.location || 'Not specified'}`,
+        message: `Check out this post from SecureHer:\n\n${post.title}\n\n${post.description || ''}\n\nLocation: ${post.location || 'Not specified'}`,
         url: post.image, // Optional: sharing image URL
       });
-  
+
       if (result.action === Share.sharedAction) {
         if (result.activityType) {
           // Shared with activity type
@@ -565,7 +565,7 @@ const CommunityScreen = () => {
     const colorIndex = Math.abs(parseInt(userId || '0', 16) % colors.length);
     return colors[colorIndex];
   };
-  
+
   // Handle tag suggestions acceptance
   const handleAcceptSuggestedTags = () => {
     // Replace the current tags with the suggested ones
@@ -574,7 +574,7 @@ const CommunityScreen = () => {
     // Submit the post with the new tags
     submitPostToServer();
   };
-  
+
   // Handle navigating to support chat
   const handleNavigateToSupportChat = () => {
     setSupportModalVisible(false);
@@ -585,13 +585,13 @@ const CommunityScreen = () => {
     const date = new Date(item.createdAt);
     const formattedDate = `${date.toLocaleDateString()} · ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
     const isLiked = likedPosts.includes(item._id);
-    
+
     return (
       <View style={styles.postCard}>
         <View style={styles.postHeader}>
           <View style={styles.userInfo}>
             <View style={[
-              styles.userAvatar, 
+              styles.userAvatar,
               { backgroundColor: getUserAvatarColor(item.userId) }
             ]}>
               <Text style={styles.userAvatarText}>
@@ -609,7 +609,7 @@ const CommunityScreen = () => {
             <Ionicons name="ellipsis-horizontal" size={20} color="#666" />
           </TouchableOpacity>
         </View>
-        
+
         <View style={styles.postContent}>
           <Text style={styles.postTitle}>{item.title}</Text>
           {item.description && (
@@ -621,14 +621,14 @@ const CommunityScreen = () => {
               <Text style={styles.locationText}>{item.location}</Text>
             </View>
           )}
-          
+
           {/* Properly handle tags with flexible format support */}
           {item.tags && (
             <View style={styles.tagsContainer}>
-              {(typeof item.tags === 'string' 
-                ? item.tags.split(',') 
-                : Array.isArray(item.tags) 
-                  ? item.tags 
+              {(typeof item.tags === 'string'
+                ? item.tags.split(',')
+                : Array.isArray(item.tags)
+                  ? item.tags
                   : []
               ).map((tag, index) => (
                 <View key={index} style={styles.tagBadge}>
@@ -638,24 +638,24 @@ const CommunityScreen = () => {
             </View>
           )}
         </View>
-        
+
         {item.image && (
-          <Image 
-            source={{ uri: item.image }} 
-            style={styles.postImage} 
+          <Image
+            source={{ uri: item.image }}
+            style={styles.postImage}
             loadingIndicatorSource={require('../../assets/icon.png')}
           />
         )}
-        
+
         <View style={styles.postActions}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.actionButton}
             onPress={() => handleLike(item._id)}
           >
-            <Ionicons 
-              name={isLiked ? "heart" : "heart-outline"} 
-              size={22} 
-              color={isLiked ? "#FF4444" : "#666"} 
+            <Ionicons
+              name={isLiked ? "heart" : "heart-outline"}
+              size={22}
+              color={isLiked ? "#FF4444" : "#666"}
             />
             <Text style={[
               styles.actionText,
@@ -664,8 +664,8 @@ const CommunityScreen = () => {
               {item.likes || 0} {item.likes === 1 ? 'Like' : 'Likes'}
             </Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.actionButton}
             onPress={() => handleComment(item._id)}
           >
@@ -674,8 +674,8 @@ const CommunityScreen = () => {
               {item.comments && item.comments.length ? item.comments.length : 0} {item.comments && item.comments.length === 1 ? 'Comment' : 'Comments'}
             </Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.actionButton}
             onPress={() => handleShare(item)}
           >
@@ -686,11 +686,11 @@ const CommunityScreen = () => {
       </View>
     );
   };
-  
+
   const renderCommentItem = ({ item }) => (
     <View style={styles.commentItem}>
       <View style={[
-        styles.commentAvatar, 
+        styles.commentAvatar,
         { backgroundColor: getUserAvatarColor(item.userId) }
       ]}>
         <Text style={styles.commentAvatarText}>
@@ -712,7 +712,7 @@ const CommunityScreen = () => {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Community</Text>
         <View style={styles.headerIcons}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.headerIconButton}
             onPress={() => navigation.navigate('MyPosts')}
           >
@@ -747,7 +747,7 @@ const CommunityScreen = () => {
               <Text style={styles.emptySubText}>
                 Be the first to share something with the community
               </Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.createFirstPostButton}
                 onPress={() => setModalVisible(true)}
               >
@@ -760,7 +760,7 @@ const CommunityScreen = () => {
 
       {/* Create Post FAB (only shows when not in modal) */}
       {!modalVisible && (
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.fab}
           onPress={() => setModalVisible(true)}
         >
@@ -775,13 +775,13 @@ const CommunityScreen = () => {
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <KeyboardAvoidingView 
+        <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.modalContainer}
         >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => {
                   if (postTitle || postDescription || selectedImage || postTags.length > 0) {
@@ -790,8 +790,8 @@ const CommunityScreen = () => {
                       'Are you sure you want to discard this post?',
                       [
                         { text: 'Cancel', style: 'cancel' },
-                        { 
-                          text: 'Discard', 
+                        {
+                          text: 'Discard',
                           style: 'destructive',
                           onPress: () => {
                             setModalVisible(false);
@@ -812,7 +812,7 @@ const CommunityScreen = () => {
                 <Ionicons name="close" size={24} color="#000" />
               </TouchableOpacity>
               <Text style={styles.modalTitle}>Create Post</Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[
                   styles.postButton,
                   (!postTitle || !postLocation || uploading || analyzingPost) && styles.postButtonDisabled
@@ -837,7 +837,7 @@ const CommunityScreen = () => {
                 onChangeText={setPostTitle}
                 maxLength={100}
               />
-              
+
               <TextInput
                 style={styles.descriptionInput}
                 placeholder="Add a description (optional)"
@@ -862,7 +862,7 @@ const CommunityScreen = () => {
               {showLocationSuggestions && locationSuggestions.length > 0 && (
                 <View style={styles.suggestionContainer}>
                   {locationSuggestions.map((location, index) => (
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       key={index}
                       style={styles.suggestionItem}
                       onPress={() => selectLocation(location)}
@@ -879,7 +879,7 @@ const CommunityScreen = () => {
                   <Ionicons name="pricetag-outline" size={20} color="#666" />
                   <Text style={styles.tagsHeaderText}>Add Tags</Text>
                 </View>
-                
+
                 <View style={styles.tagInputRow}>
                   <TextInput
                     style={styles.tagInput}
@@ -889,7 +889,7 @@ const CommunityScreen = () => {
                     onChangeText={setTagInput}
                     maxLength={20}
                   />
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={[
                       styles.addTagButton,
                       !tagInput.trim() && styles.addTagButtonDisabled
@@ -900,7 +900,7 @@ const CommunityScreen = () => {
                     <Ionicons name="add" size={24} color="#FFF" />
                   </TouchableOpacity>
                 </View>
-                
+
                 {postTags.length > 0 && (
                   <View style={styles.selectedTagsContainer}>
                     {postTags.map((tag, index) => (
@@ -916,7 +916,7 @@ const CommunityScreen = () => {
                     ))}
                   </View>
                 )}
-                
+
                 <View style={styles.suggestionTagsContainer}>
                   <Text style={styles.suggestionTagsTitle}>Suggested tags:</Text>
                   <View style={styles.suggestionTagsList}>
@@ -938,8 +938,8 @@ const CommunityScreen = () => {
                   </View>
                 </View>
               </View>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={styles.imagePickerButton}
                 onPress={pickImage}
               >
@@ -954,7 +954,7 @@ const CommunityScreen = () => {
               {selectedImage && (
                 <View style={styles.selectedImageContainer}>
                   <Image source={{ uri: selectedImage }} style={styles.selectedImage} />
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.removeImageButton}
                     onPress={() => setSelectedImage(null)}
                   >
@@ -974,13 +974,13 @@ const CommunityScreen = () => {
         visible={commentModalVisible}
         onRequestClose={() => setCommentModalVisible(false)}
       >
-        <KeyboardAvoidingView 
+        <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.modalContainer}
         >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => setCommentModalVisible(false)}
               >
@@ -1021,7 +1021,7 @@ const CommunityScreen = () => {
                 multiline
                 maxLength={200}
               />
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[
                   styles.sendButton,
                   !commentText.trim() && styles.sendButtonDisabled
@@ -1029,10 +1029,10 @@ const CommunityScreen = () => {
                 onPress={submitComment}
                 disabled={!commentText.trim()}
               >
-                <Ionicons 
-                  name="send" 
-                  size={24} 
-                  color={commentText.trim() ? "#FFB5D8" : "#CCC"} 
+                <Ionicons
+                  name="send"
+                  size={24}
+                  color={commentText.trim() ? "#FFB5D8" : "#CCC"}
                 />
               </TouchableOpacity>
             </View>
@@ -1058,11 +1058,11 @@ const CommunityScreen = () => {
                 <Ionicons name="close" size={24} color="#000" />
               </TouchableOpacity>
             </View>
-            
+
             <Text style={styles.tagSuggestionsDescription}>
               We noticed the content of your post might benefit from more descriptive tags. Consider using these suggested tags:
             </Text>
-            
+
             <View style={styles.suggestedTagsList}>
               {suggestedTags.map((tag, index) => (
                 <View key={index} style={styles.suggestedTagItem}>
@@ -1070,7 +1070,7 @@ const CommunityScreen = () => {
                 </View>
               ))}
             </View>
-            
+
             <View style={styles.tagSuggestionsActions}>
               <TouchableOpacity
                 style={styles.declineTagsButton}
@@ -1081,7 +1081,7 @@ const CommunityScreen = () => {
               >
                 <Text style={styles.declineTagsButtonText}>Use My Tags</Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 style={styles.acceptTagsButton}
                 onPress={handleAcceptSuggestedTags}
@@ -1106,11 +1106,11 @@ const CommunityScreen = () => {
               <Ionicons name="heart" size={32} color="#FFB5D8" />
               <Text style={styles.supportModalTitle}>We're Here For You</Text>
             </View>
-            
+
             <Text style={styles.supportModalDescription}>
               Would you like to talk with our supportive AI assistant about anything that's on your mind? It's completely private and confidential.
             </Text>
-            
+
             <View style={styles.supportModalActions}>
               <TouchableOpacity
                 style={styles.declineSupportButton}
@@ -1118,7 +1118,7 @@ const CommunityScreen = () => {
               >
                 <Text style={styles.declineSupportButtonText}>No, thanks</Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 style={styles.acceptSupportButton}
                 onPress={handleNavigateToSupportChat}

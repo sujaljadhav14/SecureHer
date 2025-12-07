@@ -2,3 +2,5 @@
 node_modules
 .DS_Store
 .env
+
+points_to_be_noted.md
