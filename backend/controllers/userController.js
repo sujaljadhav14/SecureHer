@@ -140,9 +140,63 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     }
 });
 
+// @desc    Create a new incident
+// @route   POST /users/createIncident
+// @access  Private
+const createIncident = asyncHandler(async (req, res) => {
+    const { type, description, location, priority, status } = req.body;
+
+    // Process location if it maps to address string or object
+    // Frontend sends 'location' as string address usually
+
+    const media = [];
+
+    if (req.files) {
+        if (req.files.incidentImage) {
+            media.push(req.files.incidentImage[0].path);
+        }
+        if (req.files.incidentAudio) {
+            media.push(req.files.incidentAudio[0].path);
+        }
+    }
+
+    const incident = await require('../models/Incident').create({
+        user: req.user._id,
+        type,
+        description,
+        location: {
+            address: location // Simplified as frontend sends string
+        },
+        priority: priority || 'Low',
+        status: status || 'Active',
+        media
+    });
+
+    if (incident) {
+        res.status(201).json({
+            message: 'Incident reported successfully',
+            incident: {
+                incidentId: incident._id,
+                type: incident.type,
+                status: incident.status,
+                priority: incident.priority || 'Low',
+                createdAt: incident.createdAt,
+                location: incident.location.address,
+                description: incident.description,
+                imageUrl: req.files && req.files.incidentImage ? req.files.incidentImage[0].path : null, // Local path for now
+                audioUrl: req.files && req.files.incidentAudio ? req.files.incidentAudio[0].path : null
+            }
+        });
+    } else {
+        res.status(400);
+        throw new Error('Invalid incident data');
+    }
+});
+
 module.exports = {
     registerUser,
     authUser,
     getUserProfile,
-    updateUserProfile
+    updateUserProfile,
+    createIncident
 };

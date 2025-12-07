@@ -27,15 +27,16 @@ import * as Sharing from 'expo-sharing';
 import { useTranslations } from '../hooks/useTranslations';
 import axios from 'axios';
 
+import { API_URL } from '../config';
+
 const { width } = Dimensions.get('window');
-const API_BASE_URL = 'https://womensafety-1-5znp.onrender.com';
 
 const IncidentReportScreen = () => {
   const { t } = useTranslations();
   const navigation = useNavigation();
   const route = useRoute();
   const initialLocation = route.params?.location || null;
-  
+
   // State variables
   const [loading, setLoading] = useState(false);
   const [location, setLocation] = useState(initialLocation);
@@ -51,15 +52,15 @@ const IncidentReportScreen = () => {
   const [incidentResponse, setIncidentResponse] = useState(null);
   const [priority, setPriority] = useState('Low');
   const [status, setStatus] = useState('Active');
-  
+
   // Recording refs
   const recording = useRef(null);
-  
+
   // Incident type options
   const incidentTypes = [
-    'Harassment', 
-    'Stalking', 
-    'Assault', 
+    'Harassment',
+    'Stalking',
+    'Assault',
     'Theft',
     'Domestic Violence',
     'Public Misconduct',
@@ -76,7 +77,7 @@ const IncidentReportScreen = () => {
       if (!location) {
         await fetchLocation();
       }
-      
+
       await requestMediaPermissions();
       await Audio.requestPermissionsAsync();
     })();
@@ -98,7 +99,7 @@ const IncidentReportScreen = () => {
       if (status !== 'granted') {
         Alert.alert('Permission Required', 'Camera and media library access is needed to add photos to your report.');
       }
-      
+
       const cameraStatus = await ImagePicker.requestCameraPermissionsAsync();
       if (cameraStatus.status !== 'granted') {
         Alert.alert('Permission Required', 'Camera access is needed to take photos for your report.');
@@ -118,13 +119,13 @@ const IncidentReportScreen = () => {
         accuracy: Location.Accuracy.High
       });
       setLocation(currentLocation);
-      
+
       // Get address from coordinates
       const [address] = await Location.reverseGeocodeAsync({
         latitude: currentLocation.coords.latitude,
         longitude: currentLocation.coords.longitude
       });
-      
+
       // Set auto-detected details
       setAutoDetectedDetails({
         location: {
@@ -133,13 +134,13 @@ const IncidentReportScreen = () => {
         },
         timestamp: new Date().toISOString()
       });
-      
+
     } catch (error) {
       console.error('Error getting location:', error);
       Alert.alert('Location Error', 'Unable to get your current location.');
     }
   };
-  
+
   const formatAddress = (address) => {
     const parts = [
       address.street,
@@ -148,7 +149,7 @@ const IncidentReportScreen = () => {
       address.postalCode,
       address.country
     ].filter(part => part);
-    
+
     return parts.join(', ');
   };
 
@@ -160,7 +161,7 @@ const IncidentReportScreen = () => {
         aspect: [4, 3],
         quality: 0.8,
       });
-      
+
       if (!result.canceled && result.assets && result.assets.length > 0) {
         setImages([...images, result.assets[0].uri]);
         setSelectedImage(result.assets[0]);
@@ -179,7 +180,7 @@ const IncidentReportScreen = () => {
         aspect: [4, 3],
         quality: 0.8,
       });
-      
+
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const uri = result.assets[0].uri;
         setImages([...images, uri]);
@@ -204,22 +205,22 @@ const IncidentReportScreen = () => {
     try {
       // Clear any existing recording
       if (recordingUri) {
-        await FileSystem.deleteAsync(recordingUri).catch(() => {});
+        await FileSystem.deleteAsync(recordingUri).catch(() => { });
         setRecordingUri(null);
       }
-      
+
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
       });
-      
+
       const { recording: newRecording } = await Audio.Recording.createAsync(
         Audio.RecordingOptionsPresets.HIGH_QUALITY
       );
-      
+
       recording.current = newRecording;
       setIsRecording(true);
-      
+
       Alert.alert('Recording', 'Started recording your statement');
     } catch (error) {
       console.error('Error starting recording:', error);
@@ -230,17 +231,17 @@ const IncidentReportScreen = () => {
   const stopRecording = async () => {
     try {
       if (!recording.current) return;
-      
+
       setIsRecording(false);
       await recording.current.stopAndUnloadAsync();
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: false,
       });
-      
+
       const uri = recording.current.getURI();
       setRecordingUri(uri);
       recording.current = null;
-      
+
       Alert.alert('Recording', 'Your statement has been recorded');
     } catch (error) {
       console.error('Error stopping recording:', error);
@@ -253,143 +254,143 @@ const IncidentReportScreen = () => {
       Alert.alert('Missing Information', 'Please select an incident type');
       return false;
     }
-    
+
     if (!incidentDescription) {
       Alert.alert('Missing Information', 'Please provide a description of the incident');
       return false;
     }
-    
+
     if (!location) {
       Alert.alert('Missing Information', 'Location information is required');
       return false;
     }
-    
+
     return true;
   };
 
   // Modify the submitIncidentReport function to handle the server error better
-const submitIncidentReport = async () => {
-  if (!validateIncidentData()) {
-    return;
-  }
-  
-  try {
-    setLoading(true);
-    
-    // Get auth token
-    const token = await getAuthToken();
-    if (!token) {
-      Alert.alert('Authentication Error', 'Please log in again');
-      navigation.navigate('Login');
+  const submitIncidentReport = async () => {
+    if (!validateIncidentData()) {
       return;
     }
-    
-    // Create a FormData object
-    const formData = new FormData();
-    
-    // Add text fields
-    formData.append('type', incidentType);
-    formData.append('location', autoDetectedDetails?.location?.address || 'Unknown location');
-    formData.append('description', incidentDescription);
-    formData.append('priority', priority);
-    formData.append('status', status);
-    
-    // Add image if available (making sure to format it correctly)
-    if (recordingUri) {
-      const audioUri = Platform.OS === 'ios' ? recordingUri.replace('file://', '') : recordingUri;
-      const audioFilename = audioUri.split('/').pop() || 'audio_recording.m4a';
-      
-      // Make sure to use "incidentAudio" as the field name to match the API expectation
-      formData.append('incidentAudio', {
-        uri: audioUri,
-        name: audioFilename,
-        type: 'audio/m4a' // Ensure the correct MIME type
-      });
-      
-      console.log('Audio data:', { uri: audioUri, name: audioFilename, type: 'audio/m4a' });
-    }
-    if (selectedImage) {
-      const imageUri = Platform.OS === 'ios' ? selectedImage.uri.replace('file://', '') : selectedImage.uri;
-      const filename = imageUri.split('/').pop();
-      // Make sure the mime type is correct
-      const match = /\.(\w+)$/.exec(filename);
-      const type = match ? `image/${match[1]}` : 'image/jpeg';
-      
-      formData.append('incidentImage', {
-        uri: imageUri,
-        name: filename || 'photo.jpg',
-        type
-      });
-      
-      console.log('Image data:', { uri: imageUri, name: filename, type });
-    }
-    
-    console.log('Submitting form data:', JSON.stringify(formData));
-    
-    // Make API request with proper content type
-    const response = await axios.post(
-      `${API_BASE_URL}/users/createIncident`,
-      formData,
-      {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
-          'Accept': 'application/json'
-        },
-        timeout: 30000 // Increase timeout to 30 seconds
+
+    try {
+      setLoading(true);
+
+      // Get auth token
+      const token = await getAuthToken();
+      if (!token) {
+        Alert.alert('Authentication Error', 'Please log in again');
+        navigation.navigate('Login');
+        return;
       }
-    );
-    
-    console.log('Incident report response:', response.data);
-    
-    if (response.data && response.data.message === 'Incident reported successfully') {
-      setReportSubmitted(true);
-      setIncidentResponse(response.data.incident);
-      saveIncidentToHistory(response.data.incident);
-      Alert.alert('Report Submitted', 'Your incident report has been submitted successfully.');
-    }
-  } catch (error) {
-    console.error('Error submitting incident report:', error);
-    
-    // Enhanced error logging
-    if (error.response) {
-      console.log('Error response data:', error.response.data);
-      console.log('Error response status:', error.response.status);
-      console.log('Error response headers:', error.response.headers);
-    } else if (error.request) {
-      console.log('Error request:', error.request);
-    } else {
-      console.log('Error message:', error.message);
-    }
-    
-    // User-friendly error message
-    Alert.alert(
-      'Submission Failed', 
-      'There was a problem submitting your report. Please check your internet connection and try again.',
-      [
+
+      // Create a FormData object
+      const formData = new FormData();
+
+      // Add text fields
+      formData.append('type', incidentType);
+      formData.append('location', autoDetectedDetails?.location?.address || 'Unknown location');
+      formData.append('description', incidentDescription);
+      formData.append('priority', priority);
+      formData.append('status', status);
+
+      // Add image if available (making sure to format it correctly)
+      if (recordingUri) {
+        const audioUri = Platform.OS === 'ios' ? recordingUri.replace('file://', '') : recordingUri;
+        const audioFilename = audioUri.split('/').pop() || 'audio_recording.m4a';
+
+        // Make sure to use "incidentAudio" as the field name to match the API expectation
+        formData.append('incidentAudio', {
+          uri: audioUri,
+          name: audioFilename,
+          type: 'audio/m4a' // Ensure the correct MIME type
+        });
+
+        console.log('Audio data:', { uri: audioUri, name: audioFilename, type: 'audio/m4a' });
+      }
+      if (selectedImage) {
+        const imageUri = Platform.OS === 'ios' ? selectedImage.uri.replace('file://', '') : selectedImage.uri;
+        const filename = imageUri.split('/').pop();
+        // Make sure the mime type is correct
+        const match = /\.(\w+)$/.exec(filename);
+        const type = match ? `image/${match[1]}` : 'image/jpeg';
+
+        formData.append('incidentImage', {
+          uri: imageUri,
+          name: filename || 'photo.jpg',
+          type
+        });
+
+        console.log('Image data:', { uri: imageUri, name: filename, type });
+      }
+
+      console.log('Submitting form data:', JSON.stringify(formData));
+
+      // Make API request with proper content type
+      const response = await axios.post(
+        `${API_URL}/users/createIncident`,
+        formData,
         {
-          text: 'Try Again',
-          onPress: () => submitIncidentReport()
-        },
-        {
-          text: 'Cancel',
-          style: 'cancel'
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+            'Accept': 'application/json'
+          },
+          timeout: 30000 // Increase timeout to 30 seconds
         }
-      ]
-    );
-  } finally {
-    setLoading(false);
-  }
-};
+      );
+
+      console.log('Incident report response:', response.data);
+
+      if (response.data && response.data.message === 'Incident reported successfully') {
+        setReportSubmitted(true);
+        setIncidentResponse(response.data.incident);
+        saveIncidentToHistory(response.data.incident);
+        Alert.alert('Report Submitted', 'Your incident report has been submitted successfully.');
+      }
+    } catch (error) {
+      console.error('Error submitting incident report:', error);
+
+      // Enhanced error logging
+      if (error.response) {
+        console.log('Error response data:', error.response.data);
+        console.log('Error response status:', error.response.status);
+        console.log('Error response headers:', error.response.headers);
+      } else if (error.request) {
+        console.log('Error request:', error.request);
+      } else {
+        console.log('Error message:', error.message);
+      }
+
+      // User-friendly error message
+      Alert.alert(
+        'Submission Failed',
+        'There was a problem submitting your report. Please check your internet connection and try again.',
+        [
+          {
+            text: 'Try Again',
+            onPress: () => submitIncidentReport()
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel'
+          }
+        ]
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
   const saveIncidentToHistory = async (incident) => {
     try {
       // Get existing incidents
       const existingIncidentsJson = await AsyncStorage.getItem('incident_history');
       const existingIncidents = existingIncidentsJson ? JSON.parse(existingIncidentsJson) : [];
-      
+
       // Add new incident to history
       const updatedIncidents = [incident, ...existingIncidents];
-      
+
       // Save back to storage
       await AsyncStorage.setItem('incident_history', JSON.stringify(updatedIncidents));
     } catch (error) {
@@ -399,10 +400,10 @@ const submitIncidentReport = async () => {
 
   const shareIncidentDetails = async () => {
     if (!incidentResponse) return;
-    
+
     try {
       setLoading(true);
-      
+
       // Generate text content
       const incidentDetails = `
 INCIDENT REPORT
@@ -420,14 +421,14 @@ ${incidentResponse.description}
 ${incidentResponse.imageUrl ? `Image: ${incidentResponse.imageUrl}` : ''}
 ${incidentResponse.audioUrl ? `Audio: ${incidentResponse.audioUrl}` : ''}
       `.trim();
-      
+
       // Create a temporary file
       const filename = `Incident_${incidentResponse.incidentId}.txt`;
       const filePath = `${FileSystem.documentDirectory}${filename}`;
-      
+
       // Write to file
       await FileSystem.writeAsStringAsync(filePath, incidentDetails);
-      
+
       // Share the file
       await Sharing.shareAsync(filePath);
     } catch (error) {
@@ -454,7 +455,7 @@ ${incidentResponse.audioUrl ? `Audio: ${incidentResponse.audioUrl}` : ''}
   // Render success view after submission
   const renderSuccessView = () => {
     if (!incidentResponse) return null;
-    
+
     return (
       <View style={styles.successContainer}>
         <View style={styles.successHeader}>
@@ -462,59 +463,59 @@ ${incidentResponse.audioUrl ? `Audio: ${incidentResponse.audioUrl}` : ''}
           <Text style={styles.successTitle}>Report Submitted</Text>
           <Text style={styles.successSubtitle}>Incident #{incidentResponse.incidentId}</Text>
         </View>
-        
+
         <View style={styles.incidentDetailsCard}>
           <View style={styles.incidentDetailItem}>
             <Text style={styles.detailLabel}>Type:</Text>
             <Text style={styles.detailValue}>{incidentResponse.type}</Text>
           </View>
-          
+
           <View style={styles.incidentDetailItem}>
             <Text style={styles.detailLabel}>Status:</Text>
             <View style={[styles.statusBadge, { backgroundColor: getStatusColor(incidentResponse.status) }]}>
               <Text style={styles.statusText}>{incidentResponse.status}</Text>
             </View>
           </View>
-          
+
           <View style={styles.incidentDetailItem}>
             <Text style={styles.detailLabel}>Priority:</Text>
             <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(incidentResponse.priority) }]}>
               <Text style={styles.priorityText}>{incidentResponse.priority}</Text>
             </View>
           </View>
-          
+
           <View style={styles.incidentDetailItem}>
             <Text style={styles.detailLabel}>Reported on:</Text>
             <Text style={styles.detailValue}>
               {new Date(incidentResponse.createdAt).toLocaleString()}
             </Text>
           </View>
-          
+
           <View style={styles.incidentDetailItem}>
             <Text style={styles.detailLabel}>Location:</Text>
             <Text style={styles.detailValue}>{incidentResponse.location}</Text>
           </View>
-          
+
           <View style={styles.descriptionContainer}>
             <Text style={styles.detailLabel}>Description:</Text>
             <Text style={styles.descriptionText}>{incidentResponse.description}</Text>
           </View>
-          
+
           {incidentResponse.imageUrl && (
             <View style={styles.evidenceContainer}>
               <Text style={styles.detailLabel}>Image Evidence:</Text>
-              <Image 
+              <Image
                 source={{ uri: incidentResponse.imageUrl }}
                 style={styles.evidenceImage}
                 resizeMode="cover"
               />
             </View>
           )}
-          
+
           {incidentResponse.audioUrl && (
             <View style={styles.audioEvidenceContainer}>
               <Text style={styles.detailLabel}>Audio Statement:</Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.audioPlayButton}
                 onPress={() => {
                   // Add audio playback functionality here
@@ -527,17 +528,17 @@ ${incidentResponse.audioUrl ? `Audio: ${incidentResponse.audioUrl}` : ''}
             </View>
           )}
         </View>
-        
+
         <View style={styles.successActions}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.shareButton}
             onPress={shareIncidentDetails}
           >
             <Ionicons name="share-outline" size={20} color="#FFF" />
             <Text style={styles.actionButtonText}>Share Details</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.newReportButton}
             onPress={handleNewReport}
           >
@@ -559,7 +560,7 @@ ${incidentResponse.audioUrl ? `Audio: ${incidentResponse.audioUrl}` : ''}
       default: return '#FFB5D8';
     }
   };
-  
+
   const getPriorityColor = (priority) => {
     switch (priority) {
       case 'Low': return '#4CAF50';
@@ -573,15 +574,12 @@ ${incidentResponse.audioUrl ? `Audio: ${incidentResponse.audioUrl}` : ''}
   // Render the form for creating a report
   const renderFormView = () => {
     return (
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.formContainer}
-      >
+      <View style={styles.formContainer}>
         {/* Incident Type Selection */}
         <View style={styles.formSection}>
           <Text style={styles.sectionTitle}>Type of Incident*</Text>
-          <ScrollView 
-            horizontal 
+          <ScrollView
+            horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.typeButtonsContainer}
           >
@@ -604,7 +602,7 @@ ${incidentResponse.audioUrl ? `Audio: ${incidentResponse.audioUrl}` : ''}
             ))}
           </ScrollView>
         </View>
-        
+
         {/* Priority Selection */}
         <View style={styles.formSection}>
           <Text style={styles.sectionTitle}>Priority</Text>
@@ -624,7 +622,7 @@ ${incidentResponse.audioUrl ? `Audio: ${incidentResponse.audioUrl}` : ''}
             ))}
           </View>
         </View>
-        
+
         {/* Location Information */}
         <View style={styles.formSection}>
           <Text style={styles.sectionTitle}>Location*</Text>
@@ -640,7 +638,7 @@ ${incidentResponse.audioUrl ? `Audio: ${incidentResponse.audioUrl}` : ''}
             )}
           </View>
         </View>
-        
+
         {/* Incident Description */}
         <View style={styles.formSection}>
           <Text style={styles.sectionTitle}>Describe what happened*</Text>
@@ -651,7 +649,7 @@ ${incidentResponse.audioUrl ? `Audio: ${incidentResponse.audioUrl}` : ''}
             value={incidentDescription}
             onChangeText={setIncidentDescription}
           />
-          
+
           {/* Record Voice Option */}
           <View style={styles.recordContainer}>
             <TouchableOpacity
@@ -661,10 +659,10 @@ ${incidentResponse.audioUrl ? `Audio: ${incidentResponse.audioUrl}` : ''}
               ]}
               onPress={isRecording ? stopRecording : startRecording}
             >
-              <Ionicons 
-                name={isRecording ? "stop" : "mic"} 
-                size={24} 
-                color="#FFF" 
+              <Ionicons
+                name={isRecording ? "stop" : "mic"}
+                size={24}
+                color="#FFF"
               />
               <Text style={styles.recordButtonText}>
                 {isRecording ? "Stop Recording" : recordingUri ? "Re-record Statement" : "Record Voice Statement"}
@@ -675,7 +673,7 @@ ${incidentResponse.audioUrl ? `Audio: ${incidentResponse.audioUrl}` : ''}
             )}
           </View>
         </View>
-        
+
         {/* Add Evidence */}
         <View style={styles.formSection}>
           <Text style={styles.sectionTitle}>Add Image Evidence (Optional)</Text>
@@ -684,24 +682,24 @@ ${incidentResponse.audioUrl ? `Audio: ${incidentResponse.audioUrl}` : ''}
               <Ionicons name="camera" size={24} color="#FFB5D8" />
               <Text style={styles.mediaButtonText}>Take Photo</Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity style={styles.mediaButton} onPress={handlePickImage}>
               <Ionicons name="image" size={24} color="#FFB5D8" />
               <Text style={styles.mediaButtonText}>Upload Image</Text>
             </TouchableOpacity>
           </View>
-          
+
           {/* Image Preview */}
           {images.length > 0 && (
-            <ScrollView 
-              horizontal 
+            <ScrollView
+              horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.imagePreviewContainer}
             >
               {images.map((uri, index) => (
                 <View key={index} style={styles.imagePreview}>
                   <Image source={{ uri }} style={styles.previewImage} />
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.removeImageButton}
                     onPress={() => handleRemoveImage(index)}
                   >
@@ -712,7 +710,7 @@ ${incidentResponse.audioUrl ? `Audio: ${incidentResponse.audioUrl}` : ''}
             </ScrollView>
           )}
         </View>
-        
+
         {/* Submit Button */}
         <TouchableOpacity
           style={styles.submitButton}
@@ -728,7 +726,7 @@ ${incidentResponse.audioUrl ? `Audio: ${incidentResponse.audioUrl}` : ''}
             </>
           )}
         </TouchableOpacity>
-      </KeyboardAvoidingView>
+      </View>
     );
   };
 
@@ -736,7 +734,7 @@ ${incidentResponse.audioUrl ? `Audio: ${incidentResponse.audioUrl}` : ''}
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
@@ -749,18 +747,18 @@ ${incidentResponse.audioUrl ? `Audio: ${incidentResponse.audioUrl}` : ''}
       </View>
 
       // Replace the current ScrollView with this enhanced version
-<KeyboardAwareScrollView 
-  style={styles.scrollView}
-  contentContainerStyle={styles.scrollContent}
-  keyboardShouldPersistTaps="handled"
-  showsVerticalScrollIndicator={true}
-  enableOnAndroid={true}
-  extraScrollHeight={Platform.OS === 'ios' ? 80 : 120}
-  enableResetScrollToCoords={false}
->
-  {reportSubmitted ? renderSuccessView() : renderFormView()}
-</KeyboardAwareScrollView>
-      
+      <KeyboardAwareScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={true}
+        enableOnAndroid={true}
+        extraScrollHeight={Platform.OS === 'ios' ? 80 : 120}
+        enableResetScrollToCoords={false}
+      >
+        {reportSubmitted ? renderSuccessView() : renderFormView()}
+      </KeyboardAwareScrollView>
+
       {loading && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#FFB5D8" />

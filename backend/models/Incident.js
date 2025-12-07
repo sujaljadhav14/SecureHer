@@ -10,7 +10,8 @@ const IncidentSchema = new mongoose.Schema({
     },
     media: [{ type: String }], // URLs to images/audio
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    status: { type: String, default: 'Pending', enum: ['Pending', 'Reviewed', 'Resolved'] },
+    status: { type: String, default: 'Pending', enum: ['Active', 'Pending', 'Reviewed', 'Resolved'] },
+    priority: { type: String, default: 'Low', enum: ['Low', 'Medium', 'High', 'Critical'] },
     createdAt: { type: Date, default: Date.now }
 });
 
