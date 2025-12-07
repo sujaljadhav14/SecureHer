@@ -193,10 +193,37 @@ const createIncident = asyncHandler(async (req, res) => {
     }
 });
 
+// @desc    Get all incidents (Admin)
+// @route   GET /admin/getAllIncidents
+// @access  Public (for now, or protect if needed)
+const getAllIncidents = asyncHandler(async (req, res) => {
+    const incidents = await require('../models/Incident').find({}).sort({ createdAt: -1 }).populate('user', 'name email mobileNumber'); // POPULATE USER DATA
+
+    // Map to format expected by CMS if needed, or send as is
+    // The CMS seems to expect 'reportedByName', which we can get from populated user
+    const formattedIncidents = incidents.map(incident => ({
+        _id: incident._id,
+        incidentId: incident._id.toString().slice(-6).toUpperCase(), // varied ID for display
+        type: incident.type,
+        status: incident.status,
+        priority: incident.priority,
+        description: incident.description,
+        location: incident.location.address,
+        createdAt: incident.createdAt,
+        imageUrl: incident.media && incident.media[0] ? incident.media[0] : null, // Take first image
+        audioUrl: incident.media && incident.media[1] ? incident.media[1] : null, // Audio usually second
+        reportedBy: incident.user,
+        reportedByName: incident.user ? incident.user.name : 'Anonymous'
+    }));
+
+    res.json(formattedIncidents);
+});
+
 module.exports = {
     registerUser,
     authUser,
     getUserProfile,
     updateUserProfile,
-    createIncident
+    createIncident,
+    getAllIncidents
 };

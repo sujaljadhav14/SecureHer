@@ -6,10 +6,14 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const http = require('http');
 const { Server } = require('socket.io');
+const path = require('path');
 const userRoutes = require('./routes/userRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 
 const app = express();
+
+
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
@@ -33,6 +37,10 @@ mongoose.connect(MONGODB_URI)
 
 // Routes
 app.use('/users', userRoutes);
+app.use('/admin', adminRoutes);
+
+// Serve Static Uploads
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Socket.io Connection
 io.on('connection', (socket) => {

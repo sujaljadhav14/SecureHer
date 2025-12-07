@@ -16,7 +16,7 @@ export default function IncidentsPage() {
   const [selectedIncident, setSelectedIncident] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [error, setError] = useState(null);
-  
+
   // Add states for handling status and priority updates
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [updatingPriority, setUpdatingPriority] = useState(false);
@@ -26,12 +26,12 @@ export default function IncidentsPage() {
     const fetchIncidents = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch('https://womensafety-1-5znp.onrender.com/admin/getAllIncidents');
-        
+        const response = await fetch('http://localhost:5000/admin/getAllIncidents');
+
         if (!response.ok) {
           throw new Error(`API request failed with status ${response.status}`);
         }
-        
+
         const data = await response.json();
         setIncidents(data);
         setError(null);
@@ -49,10 +49,10 @@ export default function IncidentsPage() {
   // Format date to readable format
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString("en-IN", { 
-      year: "numeric", 
-      month: "short", 
-      day: "numeric" 
+    return date.toLocaleDateString("en-IN", {
+      year: "numeric",
+      month: "short",
+      day: "numeric"
     });
   };
 
@@ -72,13 +72,13 @@ export default function IncidentsPage() {
     const date = new Date(dateString);
     const now = new Date();
     const diffMs = now - date;
-    
+
     const minutes = Math.floor(diffMs / 60000);
     if (minutes < 60) return `${minutes} min ago`;
-    
+
     const hours = Math.floor(minutes / 60);
     if (hours < 24) return `${hours} hours ago`;
-    
+
     const days = Math.floor(hours / 24);
     return `${days} days ago`;
   };
@@ -120,19 +120,19 @@ export default function IncidentsPage() {
     if (sortConfig.key === 'createdAt' || sortConfig.key === 'updatedAt') {
       const dateA = new Date(a[sortConfig.key]);
       const dateB = new Date(b[sortConfig.key]);
-      
+
       if (sortConfig.direction === "asc") {
         return dateA - dateB;
       } else {
         return dateB - dateA;
       }
     }
-    
+
     // Handle nested properties like reportedBy.name
     if (sortConfig.key === 'reportedByName') {
       const valueA = a['reportedByName'] || (a.reportedBy && a.reportedBy.name) || '';
       const valueB = b['reportedByName'] || (b.reportedBy && b.reportedBy.name) || '';
-      
+
       if (valueA < valueB) {
         return sortConfig.direction === "asc" ? -1 : 1;
       }
@@ -141,7 +141,7 @@ export default function IncidentsPage() {
       }
       return 0;
     }
-    
+
     // General case
     if (a[sortConfig.key] < b[sortConfig.key]) {
       return sortConfig.direction === "asc" ? -1 : 1;
@@ -155,31 +155,31 @@ export default function IncidentsPage() {
   // Filter incidents based on search term and filters
   const filteredIncidents = sortedIncidents.filter(incident => {
     const reportedByName = incident.reportedByName || (incident.reportedBy && incident.reportedBy.name) || '';
-    
-    const matchesSearch = 
+
+    const matchesSearch =
       reportedByName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (incident.incidentId && incident.incidentId.toString().includes(searchTerm.toLowerCase())) ||
       (incident.type && incident.type.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (incident.location && incident.location.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    const matchesStatus = statusFilter === "all" || 
+
+    const matchesStatus = statusFilter === "all" ||
       (incident.status && incident.status.toLowerCase() === statusFilter.toLowerCase());
-    
-    const matchesType = typeFilter === "all" || 
+
+    const matchesType = typeFilter === "all" ||
       (incident.type && incident.type.toLowerCase() === typeFilter.toLowerCase());
-    
-    const matchesPriority = priorityFilter === "all" || 
+
+    const matchesPriority = priorityFilter === "all" ||
       (incident.priority && incident.priority.toLowerCase() === priorityFilter.toLowerCase());
-    
+
     return matchesSearch && matchesStatus && matchesType && matchesPriority;
   });
 
   // Get unique types from incidents
   const incidentTypes = [...new Set(incidents.map(incident => incident.type))].filter(Boolean);
-  
+
   // Get unique statuses from incidents
   const incidentStatuses = [...new Set(incidents.map(incident => incident.status))].filter(Boolean);
-  
+
   // Get unique priorities from incidents
   const incidentPriorities = [...new Set(incidents.map(incident => incident.priority))].filter(Boolean);
 
@@ -208,31 +208,31 @@ export default function IncidentsPage() {
   const updateIncidentStatus = async (incidentId, newStatus) => {
     try {
       setUpdatingStatus(true);
-      const response = await fetch(`https://womensafety-1-5znp.onrender.com/admin/updateIncidentStatus/${incidentId}`, {
+      const response = await fetch(`http://localhost:5000/admin/updateIncidentStatus/${incidentId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ status: newStatus }),
       });
-      
+
       if (!response.ok) {
         throw new Error(`Failed to update status: ${response.status}`);
       }
-      
+
       // Refresh the incidents list after update
-      const refreshResponse = await fetch('https://womensafety-1-5znp.onrender.com/admin/getAllIncidents');
+      const refreshResponse = await fetch('http://localhost:5000/admin/getAllIncidents');
       if (refreshResponse.ok) {
         const newData = await refreshResponse.json();
         setIncidents(newData);
-        
+
         // Update the selected incident to show the changes in the modal
         const updatedIncident = newData.find(inc => inc._id === incidentId);
         if (updatedIncident) {
           setSelectedIncident(updatedIncident);
         }
       }
-      
+
     } catch (error) {
       console.error("Error updating incident status:", error);
       setError("Failed to update incident status. Please try again.");
@@ -245,31 +245,31 @@ export default function IncidentsPage() {
   const updateIncidentPriority = async (incidentId, newPriority) => {
     try {
       setUpdatingPriority(true);
-      const response = await fetch(`https://womensafety-1-5znp.onrender.com/admin/updateIncidentPriority/${incidentId}`, {
+      const response = await fetch(`http://localhost:5000/admin/updateIncidentPriority/${incidentId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ priority: newPriority }),
       });
-      
+
       if (!response.ok) {
         throw new Error(`Failed to update priority: ${response.status}`);
       }
-      
+
       // Refresh the incidents list after update
-      const refreshResponse = await fetch('https://womensafety-1-5znp.onrender.com/admin/getAllIncidents');
+      const refreshResponse = await fetch('http://localhost:5000/admin/getAllIncidents');
       if (refreshResponse.ok) {
         const newData = await refreshResponse.json();
         setIncidents(newData);
-        
+
         // Update the selected incident to show the changes in the modal
         const updatedIncident = newData.find(inc => inc._id === incidentId);
         if (updatedIncident) {
           setSelectedIncident(updatedIncident);
         }
       }
-      
+
     } catch (error) {
       console.error("Error updating incident priority:", error);
       setError("Failed to update incident priority. Please try again.");
@@ -291,7 +291,7 @@ export default function IncidentsPage() {
 
     // Match common types with appropriate icons
     if (!type) return defaultIcon;
-    
+
     switch (type.toLowerCase()) {
       case "sos":
         return (
@@ -353,7 +353,7 @@ export default function IncidentsPage() {
         <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-4">
           <p>{error}</p>
         </div>
-        <button 
+        <button
           onClick={() => window.location.reload()}
           className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
         >
@@ -447,7 +447,7 @@ export default function IncidentsPage() {
                 <span>Filters</span>
               </div>
             </button>
-            <button 
+            <button
               onClick={() => {
                 setSearchTerm("");
                 setStatusFilter("all");
@@ -521,386 +521,387 @@ export default function IncidentsPage() {
         </div>
       </div>
 
-     {/* Incidents Table */}
-<div className="bg-white rounded-lg shadow overflow-hidden">
-  <table className="min-w-full divide-y divide-gray-200">
-    <thead className="bg-gray-50">
-      <tr>
-        <th 
-          scope="col" 
-          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-          onClick={() => requestSort("incidentId")}
-        >
-          <div className="flex items-center">
-            Incident ID {getSortDirectionIndicator("incidentId")}
-          </div>
-        </th>
-        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-          Type
-        </th>
-        <th 
-          scope="col" 
-          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-          onClick={() => requestSort("reportedByName")}
-        >
-          <div className="flex items-center">
-            Reported By {getSortDirectionIndicator("reportedByName")}
-          </div>
-        </th>
-        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-          Location
-        </th>
-        <th 
-          scope="col" 
-          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-          onClick={() => requestSort("createdAt")}
-        >
-          <div className="flex items-center">
-            Time {getSortDirectionIndicator("createdAt")}
-          </div>
-        </th>
-        <th 
-          scope="col" 
-          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-          onClick={() => requestSort("status")}
-        >
-          <div className="flex items-center">
-            Status {getSortDirectionIndicator("status")}
-          </div>
-        </th>
-        <th 
-          scope="col" 
-          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-          onClick={() => requestSort("priority")}
-        >
-          <div className="flex items-center">
-            Priority {getSortDirectionIndicator("priority")}
-          </div>
-        </th>
-        <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-          Actions
-        </th>
-      </tr>
-    </thead>
-    <tbody className="bg-white divide-y divide-gray-200">
-      {filteredIncidents.length > 0 ? (
-        filteredIncidents.map((incident) => (
-          <tr key={incident._id} className="hover:bg-gray-50">
-            <td className="px-6 py-4 whitespace-nowrap">
-              <div className="text-sm font-medium text-gray-900">#{incident.incidentId}</div>
-            </td>
-            <td className="px-6 py-4 whitespace-nowrap">
-              <div className="flex items-center">
-                {getIncidentTypeIcon(incident.type)}
-                <span className="ml-2 text-sm font-medium text-gray-900">{incident.type}</span>
-              </div>
-            </td>
-            <td className="px-6 py-4 whitespace-nowrap">
-              <div className="flex items-center">
-                <div className="flex-shrink-0 h-8 w-8 rounded-full bg-red-100 flex items-center justify-center text-red-700 font-medium">
-                  {incident.reportedByName ? incident.reportedByName.charAt(0).toUpperCase() : '?'}
+      {/* Incidents Table */}
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                onClick={() => requestSort("incidentId")}
+              >
+                <div className="flex items-center">
+                  Incident ID {getSortDirectionIndicator("incidentId")}
                 </div>
-                <div className="ml-3">
-                  <div className="text-sm font-medium text-gray-900">{incident.reportedByName || 'Unknown'}</div>
-                  <div className="text-xs text-gray-500">{incident.reportedBy?._id || ''}</div>
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Type
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                onClick={() => requestSort("reportedByName")}
+              >
+                <div className="flex items-center">
+                  Reported By {getSortDirectionIndicator("reportedByName")}
+                </div>
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Location
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                onClick={() => requestSort("createdAt")}
+              >
+                <div className="flex items-center">
+                  Time {getSortDirectionIndicator("createdAt")}
+                </div>
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                onClick={() => requestSort("status")}
+              >
+                <div className="flex items-center">
+                  Status {getSortDirectionIndicator("status")}
+                </div>
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                onClick={() => requestSort("priority")}
+              >
+                <div className="flex items-center">
+                  Priority {getSortDirectionIndicator("priority")}
+                </div>
+              </th>
+              <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {filteredIncidents.length > 0 ? (
+              filteredIncidents.map((incident) => (
+                <tr key={incident._id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">#{incident.incidentId}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      {getIncidentTypeIcon(incident.type)}
+                      <span className="ml-2 text-sm font-medium text-gray-900">{incident.type}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 h-8 w-8 rounded-full bg-red-100 flex items-center justify-center text-red-700 font-medium">
+                        {incident.reportedByName ? incident.reportedByName.charAt(0).toUpperCase() : '?'}
+                      </div>
+                      <div className="ml-3">
+                        <div className="text-sm font-medium text-gray-900">{incident.reportedByName || 'Unknown'}</div>
+                        <div className="text-xs text-gray-500">{incident.reportedBy?._id || ''}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{incident.location || 'Unknown location'}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{incident.time || formatTime(incident.createdAt)}</div>
+                    <div className="text-xs text-gray-500">{getTimeElapsed(incident.createdAt)}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(incident.status)}`}>
+                      {incident.status || 'Unknown'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPriorityColor(incident.priority)}`}>
+                      {incident.priority || 'Unknown'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                    <div className="flex justify-center space-x-2">
+                      <button
+                        onClick={() => handleViewIncident(incident)}
+                        className="text-blue-600 hover:text-blue-900"
+                        title="View Details"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      </button>
+                      <button
+                        className="text-yellow-600 hover:text-yellow-900"
+                        title="Edit Incident"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                      </button>
+                      <button
+                        className="text-red-600 hover:text-red-900"
+                        title="Delete Incident"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="8" className="px-6 py-4 text-center text-gray-500">
+                  {incidents.length > 0 ? 'No incidents match your filters' : 'No incidents found'}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+      {/* Incident Detail Modal */}
+      {isDetailModalOpen && selectedIncident && (
+        <div className="fixed inset-0 z-50 overflow-auto bg-gray-500 bg-opacity-75 flex items-center justify-center">
+          <div className="relative bg-white rounded-lg max-w-4xl w-full mx-4 shadow-xl">
+            <div className="flex justify-between items-center p-6 border-b">
+              <h3 className="text-lg font-semibold text-gray-900">Incident #{selectedIncident.incidentId} Details</h3>
+              <button
+                onClick={() => setIsDetailModalOpen(false)}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[80vh]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                  <div className="mb-6">
+                    <h4 className="text-sm font-medium text-gray-500 mb-1">Incident ID</h4>
+                    <p className="text-base font-medium">#{selectedIncident.incidentId}</p>
+                  </div>
+                  <div className="mb-6">
+                    <h4 className="text-sm font-medium text-gray-500 mb-1">Reported By</h4>
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 h-10 w-10 rounded-full bg-red-100 flex items-center justify-center text-red-700 font-medium">
+                        {selectedIncident.reportedByName ? selectedIncident.reportedByName.charAt(0).toUpperCase() : '?'}
+                      </div>
+                      <div className="ml-3">
+                        <p className="text-base font-medium">{selectedIncident.reportedByName || 'Unknown'}</p>
+                        <p className="text-sm text-gray-500">{selectedIncident.reportedBy?._id || ''}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mb-6">
+                    <h4 className="text-sm font-medium text-gray-500 mb-1">Type</h4>
+                    <div className="flex items-center">
+                      {getIncidentTypeIcon(selectedIncident.type)}
+                      <span className="ml-2 font-medium">{selectedIncident.type || 'Unknown'}</span>
+                    </div>
+                  </div>
+                  <div className="mb-6">
+                    <h4 className="text-sm font-medium text-gray-500 mb-1">Date & Time</h4>
+                    <p className="text-base font-medium">{selectedIncident.time || formatDateTime(selectedIncident.createdAt)}</p>
+                    <p className="text-sm text-gray-500">{getTimeElapsed(selectedIncident.createdAt)}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="mb-6">
+                    <h4 className="text-sm font-medium text-gray-500 mb-1">Status</h4>
+                    <div className="flex items-center">
+                      <span className={`px-3 py-1 inline-flex text-sm font-semibold rounded-full ${getStatusColor(selectedIncident.status)}`}>
+                        {selectedIncident.status || 'Unknown'}
+                      </span>
+                      {updatingStatus && (
+                        <span className="ml-2">
+                          <div className="animate-spin h-4 w-4 border-t-2 border-b-2 border-blue-500 rounded-full"></div>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mb-6">
+                    <h4 className="text-sm font-medium text-gray-500 mb-1">Priority</h4>
+                    <div className="flex items-center">
+                      <span className={`px-3 py-1 inline-flex text-sm font-semibold rounded-full ${getPriorityColor(selectedIncident.priority)}`}>
+                        {selectedIncident.priority || 'Unknown'}
+                      </span>
+                      {updatingPriority && (
+                        <span className="ml-2">
+                          <div className="animate-spin h-4 w-4 border-t-2 border-b-2 border-blue-500 rounded-full"></div>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mb-6">
+                    <h4 className="text-sm font-medium text-gray-500 mb-1">Location</h4>
+                    <p className="text-base font-medium">{selectedIncident.location || 'Unknown location'}</p>
+                  </div>
+                  <div className="mb-6">
+                    <h4 className="text-sm font-medium text-gray-500 mb-1">Description</h4>
+                    <p className="text-base">{selectedIncident.description || 'No description provided'}</p>
+                  </div>
                 </div>
               </div>
-            </td>
-            <td className="px-6 py-4 whitespace-nowrap">
-              <div className="text-sm text-gray-900">{incident.location || 'Unknown location'}</div>
-            </td>
-            <td className="px-6 py-4 whitespace-nowrap">
-              <div className="text-sm text-gray-900">{incident.time || formatTime(incident.createdAt)}</div>
-              <div className="text-xs text-gray-500">{getTimeElapsed(incident.createdAt)}</div>
-            </td>
-            <td className="px-6 py-4 whitespace-nowrap">
-              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(incident.status)}`}>
-                {incident.status || 'Unknown'}
-              </span>
-            </td>
-            <td className="px-6 py-4 whitespace-nowrap">
-              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPriorityColor(incident.priority)}`}>
-                {incident.priority || 'Unknown'}
-              </span>
-            </td>
-            <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-              <div className="flex justify-center space-x-2">
-                <button 
-                  onClick={() => handleViewIncident(incident)}
-                  className="text-blue-600 hover:text-blue-900"
-                  title="View Details"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                </button>
-                <button 
-                  className="text-yellow-600 hover:text-yellow-900"
-                  title="Edit Incident"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                  </svg>
-                </button>
-                <button 
-                  className="text-red-600 hover:text-red-900"
-                  title="Delete Incident"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
+
+              {/* Evidence Section */}
+              <div className="border-t pt-6 mb-6">
+                <h4 className="text-md font-semibold text-gray-800 mb-4">Evidence</h4>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Image Evidence */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h5 className="text-sm font-medium text-gray-500 mb-2">Image Evidence</h5>
+                    {selectedIncident.imageUrl ? (
+                      <div className="mb-2">
+                        <div className="relative h-64 w-full">
+                          <img
+                            src={selectedIncident.imageUrl.startsWith('http') ? selectedIncident.imageUrl : `http://localhost:5000/${selectedIncident.imageUrl.replace(/\\/g, '/')}`}
+                            alt="Incident evidence"
+                            className="h-full w-full object-contain rounded-md border border-gray-200"
+                          />
+                        </div>
+                        <a
+                          href={selectedIncident.imageUrl.startsWith('http') ? selectedIncident.imageUrl : `http://localhost:5000/${selectedIncident.imageUrl.replace(/\\/g, '/')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 text-sm inline-flex items-center mt-2"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                          View full image
+                        </a>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center h-64 bg-gray-100 text-gray-400 rounded-md">
+                        <div className="text-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <p>No image evidence available</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Audio Evidence */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h5 className="text-sm font-medium text-gray-500 mb-2">Voice Statement</h5>
+                    {selectedIncident.audioUrl ? (
+                      <div className="mb-4">
+                        <audio
+                          controls
+                          className="w-full"
+                          src={selectedIncident.audioUrl}
+                        >
+                          Your browser does not support the audio element.
+                        </audio>
+                        <a
+                          href={selectedIncident.audioUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 text-sm inline-flex items-center mt-2"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                          Download audio
+                        </a>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center h-32 bg-gray-100 text-gray-400 rounded-md">
+                        <div className="text-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                          </svg>
+                          <p>No voice statement available</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-            </td>
-          </tr>
-        ))
-      ) : (
-        <tr>
-          <td colSpan="8" className="px-6 py-4 text-center text-gray-500">
-            {incidents.length > 0 ? 'No incidents match your filters' : 'No incidents found'}
-          </td>
-        </tr>
+
+              <div className="border-t pt-4 flex justify-end space-x-3 mt-4">
+                <button
+                  onClick={() => setIsDetailModalOpen(false)}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+                >
+                  Close
+                </button>
+
+                {selectedIncident.status?.toLowerCase() !== "resolved" && (
+                  <>
+                    <div className="relative group">
+                      <button className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+                        Update Status
+                      </button>
+                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg hidden group-hover:block z-10">
+                        <div className="py-1">
+                          <button
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                            onClick={() => updateIncidentStatus(selectedIncident._id, "Active")}
+                          >
+                            Mark as Active
+                          </button>
+                          <button
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                            onClick={() => updateIncidentStatus(selectedIncident._id, "In Progress")}
+                          >
+                            Mark as In Progress
+                          </button>
+                          <button
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                            onClick={() => updateIncidentStatus(selectedIncident._id, "Resolved")}
+                          >
+                            Mark as Resolved
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="relative group">
+                      <button className="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600">
+                        Update Priority
+                      </button>
+                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg hidden group-hover:block z-10">
+                        <div className="py-1">
+                          <button
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                            onClick={() => updateIncidentPriority(selectedIncident._id, "High")}
+                          >
+                            Set High Priority
+                          </button>
+                          <button
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                            onClick={() => updateIncidentPriority(selectedIncident._id, "Medium")}
+                          >
+                            Set Medium Priority
+                          </button>
+                          <button
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                            onClick={() => updateIncidentPriority(selectedIncident._id, "Low")}
+                          >
+                            Set Low Priority
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
-    </tbody>
-  </table>
-</div>
-{/* Incident Detail Modal */}
-{isDetailModalOpen && selectedIncident && (
-  <div className="fixed inset-0 z-50 overflow-auto bg-gray-500 bg-opacity-75 flex items-center justify-center">
-    <div className="relative bg-white rounded-lg max-w-4xl w-full mx-4 shadow-xl">
-      <div className="flex justify-between items-center p-6 border-b">
-        <h3 className="text-lg font-semibold text-gray-900">Incident #{selectedIncident.incidentId} Details</h3>
-        <button
-          onClick={() => setIsDetailModalOpen(false)}
-          className="text-gray-400 hover:text-gray-500"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-      <div className="p-6 overflow-y-auto max-h-[80vh]">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div>
-            <div className="mb-6">
-              <h4 className="text-sm font-medium text-gray-500 mb-1">Incident ID</h4>
-              <p className="text-base font-medium">#{selectedIncident.incidentId}</p>
-            </div>
-            <div className="mb-6">
-              <h4 className="text-sm font-medium text-gray-500 mb-1">Reported By</h4>
-              <div className="flex items-center">
-                <div className="flex-shrink-0 h-10 w-10 rounded-full bg-red-100 flex items-center justify-center text-red-700 font-medium">
-                  {selectedIncident.reportedByName ? selectedIncident.reportedByName.charAt(0).toUpperCase() : '?'}
-                </div>
-                <div className="ml-3">
-                  <p className="text-base font-medium">{selectedIncident.reportedByName || 'Unknown'}</p>
-                  <p className="text-sm text-gray-500">{selectedIncident.reportedBy?._id || ''}</p>
-                </div>
-              </div>
-            </div>
-            <div className="mb-6">
-              <h4 className="text-sm font-medium text-gray-500 mb-1">Type</h4>
-              <div className="flex items-center">
-                {getIncidentTypeIcon(selectedIncident.type)}
-                <span className="ml-2 font-medium">{selectedIncident.type || 'Unknown'}</span>
-              </div>
-            </div>
-            <div className="mb-6">
-              <h4 className="text-sm font-medium text-gray-500 mb-1">Date & Time</h4>
-              <p className="text-base font-medium">{selectedIncident.time || formatDateTime(selectedIncident.createdAt)}</p>
-              <p className="text-sm text-gray-500">{getTimeElapsed(selectedIncident.createdAt)}</p>
-            </div>
-          </div>
-          
-          <div>
-            <div className="mb-6">
-              <h4 className="text-sm font-medium text-gray-500 mb-1">Status</h4>
-              <div className="flex items-center">
-                <span className={`px-3 py-1 inline-flex text-sm font-semibold rounded-full ${getStatusColor(selectedIncident.status)}`}>
-                  {selectedIncident.status || 'Unknown'}
-                </span>
-                {updatingStatus && (
-                  <span className="ml-2">
-                    <div className="animate-spin h-4 w-4 border-t-2 border-b-2 border-blue-500 rounded-full"></div>
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="mb-6">
-              <h4 className="text-sm font-medium text-gray-500 mb-1">Priority</h4>
-              <div className="flex items-center">
-                <span className={`px-3 py-1 inline-flex text-sm font-semibold rounded-full ${getPriorityColor(selectedIncident.priority)}`}>
-                  {selectedIncident.priority || 'Unknown'}
-                </span>
-                {updatingPriority && (
-                  <span className="ml-2">
-                    <div className="animate-spin h-4 w-4 border-t-2 border-b-2 border-blue-500 rounded-full"></div>
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="mb-6">
-              <h4 className="text-sm font-medium text-gray-500 mb-1">Location</h4>
-              <p className="text-base font-medium">{selectedIncident.location || 'Unknown location'}</p>
-            </div>
-            <div className="mb-6">
-              <h4 className="text-sm font-medium text-gray-500 mb-1">Description</h4>
-              <p className="text-base">{selectedIncident.description || 'No description provided'}</p>
-            </div>
-          </div>
-        </div>
-        
-        {/* Evidence Section */}
-        <div className="border-t pt-6 mb-6">
-          <h4 className="text-md font-semibold text-gray-800 mb-4">Evidence</h4>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Image Evidence */}
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h5 className="text-sm font-medium text-gray-500 mb-2">Image Evidence</h5>
-              {selectedIncident.imageUrl ? (
-                <div className="mb-2">
-                  <div className="relative h-64 w-full">
-                    <img 
-                      src={selectedIncident.imageUrl} 
-                      alt="Incident evidence" 
-                      className="h-full w-full object-contain rounded-md border border-gray-200"
-                    />
-                  </div>
-                  <a 
-                    href={selectedIncident.imageUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800 text-sm inline-flex items-center mt-2"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                    View full image
-                  </a>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-64 bg-gray-100 text-gray-400 rounded-md">
-                  <div className="text-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <p>No image evidence available</p>
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            {/* Audio Evidence */}
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h5 className="text-sm font-medium text-gray-500 mb-2">Voice Statement</h5>
-              {selectedIncident.audioUrl ? (
-                <div className="mb-4">
-                  <audio 
-                    controls 
-                    className="w-full"
-                    src={selectedIncident.audioUrl}
-                  >
-                    Your browser does not support the audio element.
-                  </audio>
-                  <a 
-                    href={selectedIncident.audioUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800 text-sm inline-flex items-center mt-2"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                    Download audio
-                  </a>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-32 bg-gray-100 text-gray-400 rounded-md">
-                  <div className="text-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                    </svg>
-                    <p>No voice statement available</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-        
-        <div className="border-t pt-4 flex justify-end space-x-3 mt-4">
-          <button
-            onClick={() => setIsDetailModalOpen(false)}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
-          >
-            Close
-          </button>
-          
-          {selectedIncident.status?.toLowerCase() !== "resolved" && (
-            <>
-              <div className="relative group">
-                <button className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
-                  Update Status
-                </button>
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg hidden group-hover:block z-10">
-                  <div className="py-1">
-                    <button 
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                      onClick={() => updateIncidentStatus(selectedIncident._id, "Active")}
-                    >
-                      Mark as Active
-                    </button>
-                    <button 
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                      onClick={() => updateIncidentStatus(selectedIncident._id, "In Progress")}
-                    >
-                      Mark as In Progress
-                    </button>
-                    <button 
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                      onClick={() => updateIncidentStatus(selectedIncident._id, "Resolved")}
-                    >
-                      Mark as Resolved
-                    </button>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="relative group">
-                <button className="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600">
-                  Update Priority
-                </button>
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg hidden group-hover:block z-10">
-                  <div className="py-1">
-                    <button 
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                      onClick={() => updateIncidentPriority(selectedIncident._id, "High")}
-                    >
-                      Set High Priority
-                    </button>
-                    <button 
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                      onClick={() => updateIncidentPriority(selectedIncident._id, "Medium")}
-                    >
-                      Set Medium Priority
-                    </button>
-                    <button 
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                      onClick={() => updateIncidentPriority(selectedIncident._id, "Low")}
-                    >
-                      Set Low Priority
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
     </div>
-  </div>
-)}
-</div>
-  )};
+  )
+};
