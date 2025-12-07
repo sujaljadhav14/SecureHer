@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  SafeAreaView, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  SafeAreaView,
   Image,
   Animated,
   Easing,
@@ -23,7 +23,9 @@ import axios from 'axios';
 import IncidentReportScreen from '../screens/IncidentReportScreen';
 
 
-const API_BASE_URL = 'https://womensafety-1-5znp.onrender.com';
+import { API_URL } from '../config';
+
+// const API_BASE_URL = 'https://womensafety-1-5znp.onrender.com';
 
 const HomeScreen = () => {
   const navigation = useNavigation();
@@ -32,7 +34,7 @@ const HomeScreen = () => {
   const [closeContacts, setCloseContacts] = useState([]);
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(false);
-  
+
   // Animation values for each tab
   const scaleAnims = {
     home: useRef(new Animated.Value(1)).current,
@@ -45,7 +47,7 @@ const HomeScreen = () => {
     loadCloseContacts();
     fetchUserProfile();
   }, []);
-  
+
   const handleFakeCall = () => {
     // Navigate to the fake call screen
     navigation.navigate('FakeCall');
@@ -57,20 +59,20 @@ const HomeScreen = () => {
   const fetchUserProfile = async () => {
     try {
       setLoading(true);
-      
+
       const token = await AsyncStorage.getItem('userToken');
       if (!token) {
         console.log('No auth token found, using default profile');
         return;
       }
-     
-      
-      const response = await axios.get(`${API_BASE_URL}/users/getUserProfile`, {
+
+
+      const response = await axios.get(`${API_URL}/users/getUserProfile`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
-      
+
       setUserProfile(response.data);
     } catch (error) {
       console.error('Error fetching user profile:', error);
@@ -93,7 +95,7 @@ const HomeScreen = () => {
       console.error('Error loading close contacts:', error);
     }
   };
-  
+
   const handleShareLocation = async () => {
     try {
       // Check location permission
@@ -102,26 +104,26 @@ const HomeScreen = () => {
         Alert.alert('Permission denied', 'Location permission is required');
         return;
       }
-  
+
       // Get close contacts
       const contacts = await AsyncStorage.getItem('close_contacts');
       const closeContacts = contacts ? JSON.parse(contacts) : [];
-  
+
       if (closeContacts.length === 0) {
         Alert.alert('No close contacts', 'Please add close contacts first');
         return;
       }
-  
+
       // Get current location
       const location = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.High
       });
-  
+
       // Create location message
       const { latitude, longitude } = location.coords;
       const googleMapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
       const message = `My current location: ${googleMapsUrl}`;
-  
+
       // Options for sharing
       Alert.alert(
         'Share Location',
@@ -134,7 +136,7 @@ const HomeScreen = () => {
               try {
                 // This opens WhatsApp's group creation screen
                 await Linking.openURL('whatsapp://group');
-                
+
                 // After a short delay, show instructions to user
                 setTimeout(() => {
                   Alert.alert(
@@ -168,12 +170,12 @@ const HomeScreen = () => {
               // Send to each contact individually
               for (const contact of closeContacts) {
                 let phoneNumber = contact.phoneNumbers[0].number.replace(/\D/g, '');
-                
+
                 // Add country code if not present
                 if (phoneNumber.length === 10) {
                   phoneNumber = `91${phoneNumber}`; // Adding India's country code
                 }
-                
+
                 try {
                   const whatsappUrl = `whatsapp://send?phone=${phoneNumber}&text=${encodeURIComponent(message)}`;
                   await Linking.openURL(whatsappUrl);
@@ -190,7 +192,7 @@ const HomeScreen = () => {
           }
         ]
       );
-  
+
     } catch (error) {
       console.error('Error sharing location:', error);
       Alert.alert('Error', 'An unexpected error occurred while sharing location');
@@ -227,7 +229,7 @@ const HomeScreen = () => {
     ]).start();
 
     setActiveTab(tabName);
-    
+
     // Handle navigation for tabs
     if (tabName === 'profile' && navigation) {
       navigation.navigate('Profile');
@@ -266,10 +268,10 @@ const HomeScreen = () => {
     inputRange: [0, 1],
     outputRange: ['0deg', '360deg']
   });
-  
+
   // Add Community Card
   const renderCommunityCard = () => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={styles.journeyCard}
       onPress={() => navigation.navigate('Community')}
     >
@@ -308,11 +310,29 @@ const HomeScreen = () => {
   // Generate a background color for text avatar based on user's name
   const getAvatarBackgroundColor = () => {
     if (!userProfile || !userProfile.name) return "#FFB5D8";
-    
+
     const colors = ['#FFB5D8', '#4285F4', '#34A853', '#FBBC05', '#EA4335'];
     const nameHash = userProfile.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     return colors[nameHash % colors.length];
   };
+
+  const renderWomenEmpowermentCard = () => (
+    <TouchableOpacity
+      style={[styles.journeyCard, styles.empowermentCard]}
+      onPress={handleWomenEmpowermentPress}
+    >
+      <View style={styles.journeyContent}>
+        <MaterialIcons name="emoji-people" size={24} color="#FFB5D8" />
+        <View style={styles.journeyText}>
+          <Text style={styles.journeyTitle}>Empowerment</Text>
+          <Text style={styles.journeySubtitle}>
+            Access skill development courses, financial tools, and resources for personal growth.
+          </Text>
+        </View>
+      </View>
+      <Feather name="chevron-right" size={24} color="#666" />
+    </TouchableOpacity>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -349,29 +369,29 @@ const HomeScreen = () => {
         </View>
       </View>
 
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
         {/* Quick Actions Grid */}
         <View style={styles.actionRow}>
-  <TouchableOpacity 
-    style={styles.actionCard}
-    onPress={handleFakeCall}
-  >
-    <MaterialIcons name="phone" size={24} color="#FFB5D8" />
-    <Text style={styles.actionText}>Fake call</Text>
-  </TouchableOpacity>
-  
-  <TouchableOpacity 
-    style={styles.actionCard}
-    onPress={handleShareLocation}
-  >
-    <Ionicons name="location" size={24} color="#FFB5D8" />
-    <Text style={styles.actionText}>Share live{'\n'}location</Text>
-  </TouchableOpacity>
-</View>
+          <TouchableOpacity
+            style={styles.actionCard}
+            onPress={handleFakeCall}
+          >
+            <MaterialIcons name="phone" size={24} color="#FFB5D8" />
+            <Text style={styles.actionText}>Fake call</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionCard}
+            onPress={handleShareLocation}
+          >
+            <Ionicons name="location" size={24} color="#FFB5D8" />
+            <Text style={styles.actionText}>Share live{'\n'}location</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Add Close People Card */}
         <View style={styles.peopleCard}>
@@ -379,7 +399,7 @@ const HomeScreen = () => {
             <Text style={styles.cardTitle}>Add Close people</Text>
             <Text style={styles.cardSubtitle}>Add close people and friends for sos</Text>
           </View>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.addButton}
             onPress={() => navigation.navigate('CloseContacts')}
           >
@@ -387,9 +407,9 @@ const HomeScreen = () => {
             <Ionicons name="people" size={16} color="white" />
           </TouchableOpacity>
         </View>
-   
+
         {/* Journey Card */}
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.journeyCard}
           onPress={() => navigation.navigate('JourneyTracker')}
         >
@@ -404,45 +424,29 @@ const HomeScreen = () => {
           </View>
           <Feather name="chevron-right" size={24} color="#666" />
         </TouchableOpacity>
-          {/* Incident Report Card */}
-<TouchableOpacity 
-  style={styles.journeyCard}
-  onPress={handleReportIncident}
->
-  <View style={styles.journeyContent}>
-    <Ionicons name="document-text-outline" size={24} color="#FFB5D8" />
-    <View style={styles.journeyText}>
-      <Text style={styles.journeyTitle}>Report Incident</Text>
-      <Text style={styles.journeySubtitle}>
-        File a detailed report about any safety incidents you've experienced.
-      </Text>
-    </View>
-  </View>
-  <Feather name="chevron-right" size={24} color="#666" />
-</TouchableOpacity>
+        {/* Incident Report Card */}
+        <TouchableOpacity
+          style={styles.journeyCard}
+          onPress={handleReportIncident}
+        >
+          <View style={styles.journeyContent}>
+            <Ionicons name="document-text-outline" size={24} color="#FFB5D8" />
+            <View style={styles.journeyText}>
+              <Text style={styles.journeyTitle}>Report Incident</Text>
+              <Text style={styles.journeySubtitle}>
+                File a detailed report about any safety incidents you've experienced.
+              </Text>
+            </View>
+          </View>
+          <Feather name="chevron-right" size={24} color="#666" />
+        </TouchableOpacity>
 
 
         {/* Community Card - NEW */}
         {renderCommunityCard()}
-        const renderWomenEmpowermentCard = () (
-     <TouchableOpacity 
-       style={[styles.journeyCard, styles.empowermentCard]}
-       onPress={handleWomenEmpowermentPress}
-     >
-       <View style={styles.journeyContent}>
-         <MaterialIcons name="emoji-people" size={24} color="#FFB5D8" />
-         <View style={styles.journeyText}>
-           <Text style={styles.journeyTitle}>Empowerment</Text>
-           <Text style={styles.journeySubtitle}>
-             Access skill development courses, financial tools, and resources for personal growth.
-           </Text>
-         </View>
-       </View>
-       <Feather name="chevron-right" size={24} color="#666" />
-     </TouchableOpacity>
-   );
+        {renderWomenEmpowermentCard()}
         {/* Emergency Buttons */}
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.emergencyButton}
           onPress={handlePoliceStationPress}
         >
@@ -450,7 +454,7 @@ const HomeScreen = () => {
           <Text style={styles.emergencyText}>Police station near me</Text>
           <Feather name="chevron-right" size={24} color="#666" />
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.emergencyButton}
           onPress={() => navigation.navigate('HospitalFinder')}
         >
@@ -466,31 +470,31 @@ const HomeScreen = () => {
       {/* Bottom Navigation */}
       <View style={styles.bottomNav}>
         <Animated.View style={{ transform: [{ scale: scaleAnims.home }] }}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.navItem}
             onPress={() => handleTabPress('home')}
           >
-            <Ionicons 
-              name={activeTab === 'home' ? "home" : "home-outline"} 
-              size={24} 
-              color={activeTab === 'home' ? "#FFB5D8" : "#666"} 
+            <Ionicons
+              name={activeTab === 'home' ? "home" : "home-outline"}
+              size={24}
+              color={activeTab === 'home' ? "#FFB5D8" : "#666"}
             />
             <Text style={[
-              styles.navText, 
+              styles.navText,
               { color: activeTab === 'home' ? "#FFB5D8" : "#666" }
             ]}>Home</Text>
           </TouchableOpacity>
         </Animated.View>
 
         <Animated.View style={{ transform: [{ scale: scaleAnims.navigate }] }}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.navItem}
             onPress={() => handleTabPress('navigate')}
           >
-            <Ionicons 
-              name={activeTab === 'navigate' ? "navigate" : "navigate-outline"} 
-              size={24} 
-              color={activeTab === 'navigate' ? "#FFB5D8" : "#666"} 
+            <Ionicons
+              name={activeTab === 'navigate' ? "navigate" : "navigate-outline"}
+              size={24}
+              color={activeTab === 'navigate' ? "#FFB5D8" : "#666"}
             />
           </TouchableOpacity>
         </Animated.View>
@@ -501,7 +505,7 @@ const HomeScreen = () => {
             { rotate: spin }
           ]
         }}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.sosButton}
             onPress={handleSOSPress}
             activeOpacity={0.7}
@@ -511,45 +515,45 @@ const HomeScreen = () => {
         </Animated.View>
 
         <Animated.View style={{ transform: [{ scale: scaleAnims.people }] }}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.navItem}
             onPress={() => handleTabPress('people')}
           >
-            <Ionicons 
-              name={activeTab === 'people' ? "people" : "people-outline"} 
-              size={24} 
-              color={activeTab === 'people' ? "#FFB5D8" : "#666"} 
+            <Ionicons
+              name={activeTab === 'people' ? "people" : "people-outline"}
+              size={24}
+              color={activeTab === 'people' ? "#FFB5D8" : "#666"}
             />
             <Text style={[
-              styles.navText, 
+              styles.navText,
               { color: activeTab === 'people' ? "#FFB5D8" : "#666" }
             ]}>Community</Text>
           </TouchableOpacity>
         </Animated.View>
 
         <Animated.View style={{ transform: [{ scale: scaleAnims.profile }] }}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.navItem}
             onPress={() => handleTabPress('profile')}
           >
-            <Ionicons 
-              name={activeTab === 'profile' ? "person" : "person-outline"} 
-              size={24} 
-              color={activeTab === 'profile' ? "#FFB5D8" : "#666"} 
+            <Ionicons
+              name={activeTab === 'profile' ? "person" : "person-outline"}
+              size={24}
+              color={activeTab === 'profile' ? "#FFB5D8" : "#666"}
             />
             <Text style={[
-              styles.navText, 
+              styles.navText,
               { color: activeTab === 'profile' ? "#FFB5D8" : "#666" }
             ]}>Profile</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>
-      <TouchableOpacity 
-          style={styles.genAIChatButton}
-          onPress={handleGenAIChat}
-        >
-          <MaterialCommunityIcons name="gavel" size={24} color="#FFB5D8" />
-        </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.genAIChatButton}
+        onPress={handleGenAIChat}
+      >
+        <MaterialCommunityIcons name="gavel" size={24} color="#FFB5D8" />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 };

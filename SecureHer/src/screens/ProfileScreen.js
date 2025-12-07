@@ -22,8 +22,10 @@ import { useTranslations } from '../hooks/useTranslations';
 import LanguageSelector from '../components/LanguageSelector';
 import axios from 'axios';
 
+import { API_URL } from '../config';
+
 const { width } = Dimensions.get('window');
-const API_BASE_URL = 'https://womensafety-1-5znp.onrender.com';
+// const API_URL = 'https://womensafety-1-5znp.onrender.com';
 
 const ProfileScreen = () => {
   const { t, isRTL } = useTranslations();
@@ -37,12 +39,12 @@ const ProfileScreen = () => {
   const [profileImage, setProfileImage] = useState(null);
   const [dob, setDob] = useState('');
   const [imageFile, setImageFile] = useState(null); // To store the actual image file for upload
-  
+
   // Animation value for settings options
   const [expandedSection, setExpandedSection] = useState(null);
   const fadeAnim = useState(new Animated.Value(0))[0];
   const translateAnim = useState(new Animated.Value(20))[0];
-  
+
   // Toggle settings
   const [locationSharing, setLocationSharing] = useState(true);
   const [notifications, setNotifications] = useState(true);
@@ -53,7 +55,7 @@ const ProfileScreen = () => {
   useEffect(() => {
     fetchUserProfile();
     loadUserSettings();
-    
+
     // Animation
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -82,25 +84,25 @@ const ProfileScreen = () => {
   const fetchUserProfile = async () => {
     try {
       setLoading(true);
-      
+
       const token = await getAuthToken();
       if (!token) {
         throw new Error('Authentication token not found');
       }
-      
-      const response = await axios.get(`${API_BASE_URL}/users/getUserProfile`, {
+
+      const response = await axios.get(`${API_URL}/users/getUserProfile`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
-      
+
       const userProfile = response.data;
       setUserData(userProfile);
       setName(userProfile.name || '');
       setEmail(userProfile.email || '');
       setMobileNumber(userProfile.mobileNumber || '');
       setDob(userProfile.dob || '');
-      
+
       if (userProfile.profileImage) {
         setProfileImage({ uri: userProfile.profileImage });
       }
@@ -131,16 +133,16 @@ const ProfileScreen = () => {
   const saveUserData = async () => {
     try {
       setLoading(true);
-      
+
       const token = await getAuthToken();
       if (!token) {
         throw new Error('Authentication token not found');
       }
-      
+
       // Create form data for multipart/form-data
       const formData = new FormData();
       formData.append('name', name);
-      
+
       // Only add image if a new one was selected
       if (imageFile) {
         formData.append('itemImage', {
@@ -149,10 +151,10 @@ const ProfileScreen = () => {
           name: 'profile-image.jpg',
         });
       }
-      
+
       // Make the PATCH request
       const response = await axios.patch(
-        `${API_BASE_URL}/users/updateUserProfile`,
+        `${API_URL}/users/updateUserProfile`,
         formData,
         {
           headers: {
@@ -161,10 +163,10 @@ const ProfileScreen = () => {
           }
         }
       );
-      
+
       // Update user data with the response
       setUserData(response.data);
-      
+
       // Save user settings
       const userSettings = {
         locationSharing,
@@ -172,11 +174,11 @@ const ProfileScreen = () => {
         autoSOS,
         darkMode
       };
-      
+
       await AsyncStorage.setItem('userSettings', JSON.stringify(userSettings));
-      
+
       setEditing(false);
-      
+
       Alert.alert('Success', 'Profile updated successfully');
     } catch (error) {
       console.error('Error updating user profile:', error);
@@ -202,7 +204,7 @@ const ProfileScreen = () => {
             try {
               // Remove auth token
               await AsyncStorage.removeItem('userToken');
-              
+
               // Navigate to Login screen
               navigation.reset({
                 index: 0,
@@ -244,10 +246,10 @@ const ProfileScreen = () => {
                   onPress: async () => {
                     try {
                       // In a real app, you would make an API call to delete the account
-                      
+
                       // Clear all local storage
                       await AsyncStorage.clear();
-                      
+
                       // Navigate to Login screen
                       navigation.reset({
                         index: 0,
@@ -268,19 +270,19 @@ const ProfileScreen = () => {
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
+
     if (status !== 'granted') {
       Alert.alert('Permission Required', 'Please allow access to your media library to change profile picture.');
       return;
     }
-    
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.7,
     });
-    
+
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const uri = result.assets[0].uri;
       setProfileImage({ uri });
@@ -305,14 +307,14 @@ const ProfileScreen = () => {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>My Profile</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.editButton}
           onPress={() => {
             if (editing) {
@@ -326,12 +328,12 @@ const ProfileScreen = () => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        <Animated.View 
+        <Animated.View
           style={[
             styles.profileSection,
             {
@@ -358,7 +360,7 @@ const ProfileScreen = () => {
               )}
             </View>
           </TouchableOpacity>
-          
+
           <View style={styles.profileInfo}>
             {editing ? (
               <TextInput
@@ -399,45 +401,45 @@ const ProfileScreen = () => {
               </Text>
             </View>
           )}
-          
-          <TouchableOpacity 
-          style={styles.myPostsButton}
-          onPress={() => navigation.navigate('MyPosts')}
+
+          <TouchableOpacity
+            style={styles.myPostsButton}
+            onPress={() => navigation.navigate('MyPosts')}
           >
-          <Ionicons name="document-text-outline" size={20} color="#FFB5D8" style={styles.infoIcon} />
-          <Text style={styles.infoText}>My Posts</Text>
-          <Ionicons name="chevron-forward" size={20} color="#666" />
+            <Ionicons name="document-text-outline" size={20} color="#FFB5D8" style={styles.infoIcon} />
+            <Text style={styles.infoText}>My Posts</Text>
+            <Ionicons name="chevron-forward" size={20} color="#666" />
           </TouchableOpacity>
-          <TouchableOpacity 
-          style={styles.myPostsButton}
-          onPress={() => navigation.navigate('ReportHistory')}
+          <TouchableOpacity
+            style={styles.myPostsButton}
+            onPress={() => navigation.navigate('ReportHistory')}
           >
-          <Ionicons name="document-text-outline" size={20} color="#FFB5D8" style={styles.infoIcon} />
-          <Text style={styles.infoText}>Incident Report History</Text>
-          <Ionicons name="chevron-forward" size={20} color="#666" />
+            <Ionicons name="document-text-outline" size={20} color="#FFB5D8" style={styles.infoIcon} />
+            <Text style={styles.infoText}>Incident Report History</Text>
+            <Ionicons name="chevron-forward" size={20} color="#666" />
           </TouchableOpacity>
 
         </View>
 
-          
+
         <View style={styles.settingsSection}>
           <Text style={styles.sectionTitle}>Settings</Text>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.settingsItem}
             onPress={() => toggleSection('language')}
           >
             <View style={styles.settingsItemHeader}>
               <Ionicons name="language" size={20} color="#FFB5D8" style={styles.settingsIcon} />
               <Text style={styles.settingsText}>{t('profile.language_settings', 'Language')}</Text>
-              <Ionicons 
-                name={expandedSection === 'language' ? "chevron-up" : "chevron-down"} 
-                size={20} 
+              <Ionicons
+                name={expandedSection === 'language' ? "chevron-up" : "chevron-down"}
+                size={20}
                 color="#666"
                 style={styles.chevron}
               />
             </View>
-            
+
             {expandedSection === 'language' && (
               <View style={styles.expandedContent}>
                 <Text style={styles.settingDescription}>
@@ -451,21 +453,21 @@ const ProfileScreen = () => {
           </TouchableOpacity>
 
           {/* Privacy Settings */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.settingsItem}
             onPress={() => toggleSection('privacy')}
           >
             <View style={styles.settingsItemHeader}>
               <Ionicons name="shield-outline" size={20} color="#FFB5D8" style={styles.settingsIcon} />
               <Text style={styles.settingsText}>Privacy & Location</Text>
-              <Ionicons 
-                name={expandedSection === 'privacy' ? "chevron-up" : "chevron-down"} 
-                size={20} 
+              <Ionicons
+                name={expandedSection === 'privacy' ? "chevron-up" : "chevron-down"}
+                size={20}
                 color="#666"
                 style={styles.chevron}
               />
             </View>
-            
+
             {expandedSection === 'privacy' && (
               <View style={styles.expandedContent}>
                 <View style={styles.toggleItem}>
@@ -477,7 +479,7 @@ const ProfileScreen = () => {
                     thumbColor={Platform.OS === 'ios' ? '#FFFFFF' : locationSharing ? '#FFFFFF' : '#F4F4F4'}
                   />
                 </View>
-                
+
                 <Text style={styles.settingDescription}>
                   Allow the app to share your location with your emergency contacts during SOS alerts
                 </Text>
@@ -486,21 +488,21 @@ const ProfileScreen = () => {
           </TouchableOpacity>
 
           {/* Notification Settings */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.settingsItem}
             onPress={() => toggleSection('notifications')}
           >
             <View style={styles.settingsItemHeader}>
               <Ionicons name="notifications-outline" size={20} color="#FFB5D8" style={styles.settingsIcon} />
               <Text style={styles.settingsText}>Notifications</Text>
-              <Ionicons 
-                name={expandedSection === 'notifications' ? "chevron-up" : "chevron-down"} 
-                size={20} 
+              <Ionicons
+                name={expandedSection === 'notifications' ? "chevron-up" : "chevron-down"}
+                size={20}
                 color="#666"
                 style={styles.chevron}
               />
             </View>
-            
+
             {expandedSection === 'notifications' && (
               <View style={styles.expandedContent}>
                 <View style={styles.toggleItem}>
@@ -512,7 +514,7 @@ const ProfileScreen = () => {
                     thumbColor={Platform.OS === 'ios' ? '#FFFFFF' : notifications ? '#FFFFFF' : '#F4F4F4'}
                   />
                 </View>
-                
+
                 <Text style={styles.settingDescription}>
                   Receive alerts and updates about your safety status and contacts
                 </Text>
@@ -521,21 +523,21 @@ const ProfileScreen = () => {
           </TouchableOpacity>
 
           {/* SOS Settings */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.settingsItem}
             onPress={() => toggleSection('sos')}
           >
             <View style={styles.settingsItemHeader}>
               <FontAwesome5 name="heartbeat" size={20} color="#FFB5D8" style={styles.settingsIcon} />
               <Text style={styles.settingsText}>SOS Settings</Text>
-              <Ionicons 
-                name={expandedSection === 'sos' ? "chevron-up" : "chevron-down"} 
-                size={20} 
+              <Ionicons
+                name={expandedSection === 'sos' ? "chevron-up" : "chevron-down"}
+                size={20}
                 color="#666"
                 style={styles.chevron}
               />
             </View>
-            
+
             {expandedSection === 'sos' && (
               <View style={styles.expandedContent}>
                 <View style={styles.toggleItem}>
@@ -547,7 +549,7 @@ const ProfileScreen = () => {
                     thumbColor={Platform.OS === 'ios' ? '#FFFFFF' : autoSOS ? '#FFFFFF' : '#F4F4F4'}
                   />
                 </View>
-                
+
                 <Text style={styles.settingDescription}>
                   Automatically send SOS alerts when unusual activity is detected
                 </Text>
@@ -556,21 +558,21 @@ const ProfileScreen = () => {
           </TouchableOpacity>
 
           {/* Appearance Settings */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.settingsItem}
             onPress={() => toggleSection('appearance')}
           >
             <View style={styles.settingsItemHeader}>
               <Ionicons name="color-palette-outline" size={20} color="#FFB5D8" style={styles.settingsIcon} />
               <Text style={styles.settingsText}>Appearance</Text>
-              <Ionicons 
-                name={expandedSection === 'appearance' ? "chevron-up" : "chevron-down"} 
-                size={20} 
+              <Ionicons
+                name={expandedSection === 'appearance' ? "chevron-up" : "chevron-down"}
+                size={20}
                 color="#666"
                 style={styles.chevron}
               />
             </View>
-            
+
             {expandedSection === 'appearance' && (
               <View style={styles.expandedContent}>
                 <View style={styles.toggleItem}>
@@ -582,7 +584,7 @@ const ProfileScreen = () => {
                     thumbColor={Platform.OS === 'ios' ? '#FFFFFF' : darkMode ? '#FFFFFF' : '#F4F4F4'}
                   />
                 </View>
-                
+
                 <Text style={styles.settingDescription}>
                   Enable dark mode for better viewing in low light conditions
                 </Text>
@@ -594,7 +596,7 @@ const ProfileScreen = () => {
         {/* Account Actions */}
         <View style={styles.accountActions}>
           {editing ? (
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.saveButton}
               onPress={saveUserData}
             >
@@ -602,15 +604,15 @@ const ProfileScreen = () => {
             </TouchableOpacity>
           ) : (
             <>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.logoutButton}
                 onPress={handleLogout}
               >
                 <Ionicons name="log-out-outline" size={20} color="#FF4444" style={styles.actionIcon} />
                 <Text style={styles.logoutText}>Logout</Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={styles.deleteButton}
                 onPress={handleDeleteAccount}
               >

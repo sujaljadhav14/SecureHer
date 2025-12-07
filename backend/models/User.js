@@ -17,6 +17,10 @@ const userSchema = mongoose.Schema({
         unique: true,
         sparse: true // Allows multiple null values
     },
+    profileImage: {
+        type: String,
+        required: false
+    },
     pin: {
         type: String,
         required: true
