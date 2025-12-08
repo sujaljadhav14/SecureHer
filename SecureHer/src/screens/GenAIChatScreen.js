@@ -33,7 +33,7 @@ const GenAIChatScreen = () => {
   const flatListRef = useRef(null);
 
   // Gemini API configuration
-  const GEMINI_API_KEY = 'AIzaSyAGpWWKzH7OOhKKYfw1Pe_9vbDvALf208Q';
+  const GEMINI_API_KEY = 'AIzaSyBCvrEBUXIm6hSg61SRMpvDQhcbpAOjXjM';
 
   const parseSections = (text) => {
     // Split the text into sections based on headings
@@ -137,14 +137,55 @@ const GenAIChatScreen = () => {
       if (error.response) {
         console.error('API response status:', error.response.status);
       }
-      return [{ 
-        id: '0', 
-        title: 'Error', 
-        content: "I'm having trouble analyzing this incident. Please try again with more details or contact a legal professional for advice."
-      }];
+      
+      // Provide smart fallback responses based on query keywords
+      return getFallbackResponse(userQuery);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const getFallbackResponse = (query) => {
+    const lowerQuery = query.toLowerCase();
+    
+    // Detect common legal scenarios and provide relevant responses
+    if (lowerQuery.match(/theft|steal|stole|stolen|robbery|rob/)) {
+      return [
+        { id: '0', title: 'APPLICABLE IPC SECTIONS', content: 'IPC Section 378: Theft\nIPC Section 379: Punishment for theft (up to 3 years imprisonment and/or fine)\nIPC Section 380: Theft in dwelling house (up to 7 years imprisonment and fine)' },
+        { id: '1', title: 'LEGAL RECOURSE', content: '1. File FIR at nearest police station\n2. Provide evidence (CCTV, witnesses)\n3. Claim insurance if applicable\n4. Seek legal counsel for prosecution' },
+        { id: '2', title: 'NOTE', content: 'This is a fallback response. For detailed legal advice, please consult a lawyer or try again later when API is available.' }
+      ];
+    }
+    
+    if (lowerQuery.match(/assault|attack|hit|beat|violence|hurt/)) {
+      return [
+        { id: '0', title: 'APPLICABLE IPC SECTIONS', content: 'IPC Section 323: Voluntarily causing hurt (up to 1 year imprisonment)\nIPC Section 325: Voluntarily causing grievous hurt (up to 7 years imprisonment)\nIPC Section 351: Assault (up to 3 months imprisonment)' },
+        { id: '1', title: 'LEGAL RECOURSE', content: '1. Seek immediate medical attention\n2. File FIR with medical reports\n3. Preserve evidence (photos, witnesses)\n4. Consider protection orders if domestic violence' },
+        { id: '2', title: 'NOTE', content: 'This is a fallback response. For detailed legal advice, please consult a lawyer or try again later when API is available.' }
+      ];
+    }
+    
+    if (lowerQuery.match(/harassment|harass|stalk|eve.teas/)) {
+      return [
+        { id: '0', title: 'APPLICABLE IPC SECTIONS', content: 'IPC Section 354A: Sexual harassment (up to 3 years imprisonment and fine)\nIPC Section 354D: Stalking (up to 5 years imprisonment for repeat offenders)\nIPC Section 509: Words, gestures to insult modesty of women (up to 3 years)' },
+        { id: '1', title: 'LEGAL RECOURSE', content: '1. Document all incidents with dates/times\n2. File written complaint at police station\n3. Seek protection order\n4. Contact local women\'s helpline (1091)' },
+        { id: '2', title: 'NOTE', content: 'This is a fallback response. For detailed legal advice, please consult a lawyer or try again later when API is available.' }
+      ];
+    }
+    
+    // Default fallback
+    return [
+      { 
+        id: '0', 
+        title: 'Service Temporarily Unavailable', 
+        content: 'I\'m currently unable to process your legal query due to API limitations.\n\nPlease try:\n1. Describing your situation more specifically\n2. Trying again in 24 hours\n3. Consulting local police or legal aid services\n4. Calling National Women Helpline: 1091'
+      },
+      {
+        id: '1',
+        title: 'Emergency Resources',
+        content: 'Women Helpline: 1091\nPolice: 100\nAmbulance: 102\nLegal Services Authority: www.nalsa.gov.in'
+      }
+    ];
   };
 
   const toggleSection = (sectionId) => {
