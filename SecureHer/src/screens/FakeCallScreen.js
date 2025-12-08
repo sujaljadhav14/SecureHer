@@ -28,10 +28,10 @@ const CLOSE_CONTACTS_KEY = 'close_contacts';
 const FakeCallScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  
+
   // Get contact from route params or use default
   const contact = route.params?.contact || null;
-  
+
   // States
   const [isRinging, setIsRinging] = useState(true);
   const [isCallActive, setIsCallActive] = useState(false);
@@ -46,12 +46,12 @@ const FakeCallScreen = () => {
   const [timerActive, setTimerActive] = useState(false);
   const [delaySeconds, setDelaySeconds] = useState(route.params?.delaySeconds || 10);
   const [isCallEnding, setIsCallEnding] = useState(false);
-  
+
   // Animations
   const ringingAnimation = useRef(new Animated.Value(1)).current;
   const callStartedTime = useRef(null);
   const durationInterval = useRef(null);
-  
+
   // Handle back button
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -67,16 +67,16 @@ const FakeCallScreen = () => {
 
     return () => backHandler.remove();
   }, [isRinging, isCallActive]);
-  
+
   // Load contacts when component mounts
   useEffect(() => {
     loadContacts();
-    
+
     // If contact was passed, set it as selected
     if (contact) {
       setSelectedContact(contact);
     }
-    
+
     // Start vibration pattern for incoming call
     if (!delayedCall) {
       startRinging();
@@ -94,11 +94,11 @@ const FakeCallScreen = () => {
           return prev - 1;
         });
       }, 1000);
-      
+
       // Clear countdown if component unmounts
       return () => clearInterval(countdown);
     }
-    
+
     // Clean up when component unmounts
     return () => {
       stopSound();
@@ -108,7 +108,7 @@ const FakeCallScreen = () => {
       }
     };
   }, []);
-  
+
   // Animation for ringing effect
   useEffect(() => {
     if (isRinging) {
@@ -134,17 +134,17 @@ const FakeCallScreen = () => {
       }).start();
     }
   }, [isRinging]);
-  
+
   // Load contacts from AsyncStorage (directly from CloseContactsScreen storage)
   const loadContacts = async () => {
     try {
       // First try to load from close contacts (saved in CloseContactsScreen)
       const storedContacts = await AsyncStorage.getItem(CLOSE_CONTACTS_KEY);
-      
+
       if (storedContacts) {
         const parsedContacts = JSON.parse(storedContacts);
         setContacts(parsedContacts);
-        
+
         // If no specific contact was passed and we have contacts, select the first one
         if (!contact && parsedContacts.length > 0) {
           setSelectedContact(parsedContacts[0]);
@@ -153,7 +153,7 @@ const FakeCallScreen = () => {
         // If no close contacts are stored, try to load device contacts
         await loadDeviceContacts();
       }
-      
+
       // If still no contact selected, create a default one
       if (!selectedContact && !contact) {
         const defaultContact = {
@@ -165,7 +165,7 @@ const FakeCallScreen = () => {
       }
     } catch (error) {
       console.error('Error loading contacts:', error);
-      
+
       // Fallback to default contact
       if (!selectedContact && !contact) {
         const defaultContact = {
@@ -177,30 +177,30 @@ const FakeCallScreen = () => {
       }
     }
   };
-  
+
   // Load contacts from device if needed (backup option)
   const loadDeviceContacts = async () => {
     try {
       // Request permissions
       const { status } = await Contacts.requestPermissionsAsync();
-      
+
       if (status === 'granted') {
         // Fetch contacts
         const { data } = await Contacts.getContactsAsync({
           fields: [Contacts.Fields.PhoneNumbers, Contacts.Fields.Name],
           sort: Contacts.SortTypes.FirstName,
         });
-        
+
         if (data.length > 0) {
           // Filter to only include contacts with phone numbers
-          const validContacts = data.filter(c => 
+          const validContacts = data.filter(c =>
             c.phoneNumbers && c.phoneNumbers.length > 0
           );
-          
+
           // Store up to 10 contacts for the picker
           const limitedContacts = validContacts.slice(0, 10);
           setContacts(limitedContacts);
-          
+
           // Select first contact
           if (limitedContacts.length > 0 && !contact && !selectedContact) {
             setSelectedContact(limitedContacts[0]);
@@ -211,7 +211,7 @@ const FakeCallScreen = () => {
       console.error('Error loading device contacts:', error);
     }
   };
-  
+
   // Try to get system default ringtone (on Android) or use fallback
   const getSystemRingtone = async () => {
     if (Platform.OS === 'android') {
@@ -220,7 +220,7 @@ const FakeCallScreen = () => {
         const permission = await PermissionsAndroid.check(
           PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE
         );
-        
+
         if (permission || Platform.Version < 23) {
           // Use the system default ringtone path (fallback if we can't get it)
           return 'content://settings/system/ringtone';
@@ -229,25 +229,25 @@ const FakeCallScreen = () => {
         console.error('Error accessing system ringtone:', error);
       }
     }
-    
+
     // Fallback to our own ringtone
     return null;
   };
-  
+
   // Start playing ringtone and vibration
   const startRinging = async () => {
     setIsRinging(true);
-    
+
     // Vibration pattern: wait 1s, vibrate 1s, wait 0.5s, repeat
     // This mimics typical incoming call vibration
     const PATTERN = [1000, 1000, 500];
     Vibration.vibrate(PATTERN, true);
-    
+
     // Play ringtone (try to use system default if possible)
     try {
       // First try to get system default ringtone
       const systemRingtone = await getSystemRingtone();
-      
+
       if (systemRingtone && Platform.OS === 'android') {
         // On Android, try to use the system ringtone
         // Note: This requires additional permissions and may not work on all devices
@@ -269,7 +269,7 @@ const FakeCallScreen = () => {
       // Fallback silently - vibration will still work
     }
   };
-  
+
   // Stop ringtone and vibration
   const stopSound = async () => {
     try {
@@ -299,24 +299,43 @@ const FakeCallScreen = () => {
       } catch (audioError) {
         console.error('Error resetting audio mode:', audioError);
       }
-      
+
       // Force cancel vibration in all cases
       Vibration.cancel();
     }
   };
-  
+
+  // Accept incoming call
   // Accept incoming call
   const handleAcceptCall = async () => {
     try {
-      // Stop the ringtone and vibration
+      // Stop the ringtone and vibration immediately
       await stopSound();
       Vibration.cancel();
-      
+
+      // EXTRA SAFETLY: Use the same nuclear option as reject call for Android
+      try {
+        if (Platform.OS === 'ios') {
+          // For iOS, we'll just create and immediately release a new Sound object
+          const { sound: resetSound } = await Audio.Sound.createAsync(
+            require('../../assets/ringtone.mp3'), // A silent MP3 file
+            { volume: 0 }
+          );
+          await resetSound.unloadAsync();
+        } else {
+          // For Android, try toggling the audio
+          await Audio.setIsEnabledAsync(false);
+          await Audio.setIsEnabledAsync(true);
+        }
+      } catch (resetError) {
+        console.error('Error resetting audio in accept:', resetError);
+      }
+
       // Update UI state
       setIsRinging(false);
       setIsCallActive(true);
       callStartedTime.current = Date.now();
-      
+
       // Start call duration timer
       durationInterval.current = setInterval(() => {
         const duration = Math.floor((Date.now() - callStartedTime.current) / 1000);
@@ -329,16 +348,16 @@ const FakeCallScreen = () => {
       setIsCallActive(true);
     }
   };
-  
+
   // Reject incoming call
   const handleRejectCall = async () => {
     try {
       // Immediately cancel vibration
       Vibration.cancel();
-      
+
       // Stop sound with high priority
       await stopSound();
-      
+
       // Use an alternative method to reset audio
       try {
         if (Platform.OS === 'ios') {
@@ -362,23 +381,27 @@ const FakeCallScreen = () => {
       // Update UI state regardless of errors
       setIsRinging(false);
       setIsCallEnding(true);
-      
+
       // Navigate back with a slight delay to show the "Call ended" message
       setTimeout(() => {
         navigation.goBack();
       }, 600);
     }
   };
-  
+
   // End active call
-  const handleEndCall = () => {
+  const handleEndCall = async () => {
     try {
+      // Safety check: ensure sound is stopped
+      await stopSound();
+      Vibration.cancel();
+
       // Stop the timer
       if (durationInterval.current) {
         clearInterval(durationInterval.current);
         durationInterval.current = null;
       }
-      
+
       // Animate call ending
       setIsCallEnding(true);
       setIsCallActive(false);
@@ -391,19 +414,19 @@ const FakeCallScreen = () => {
       }, 600);
     }
   };
-  
+
   // Format seconds to mm:ss
   const formatDuration = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
-  
+
   // Select a contact for the fake call
   const selectContactForCall = (contact) => {
     setSelectedContact(contact);
     setPickContactModalVisible(false);
-    
+
     if (delayedCall) {
       // If it's a delayed call, show confirmation
       Alert.alert(
@@ -416,7 +439,7 @@ const FakeCallScreen = () => {
       startRinging();
     }
   };
-  
+
   // Get initials from a name
   const getInitials = (name) => {
     if (!name) return '?';
@@ -426,7 +449,7 @@ const FakeCallScreen = () => {
       .join('')
       .toUpperCase();
   };
-  
+
   // Consistent color based on name
   const getAvatarColor = (name) => {
     if (!name) return '#FFB5D8';
@@ -438,12 +461,12 @@ const FakeCallScreen = () => {
   // Render user avatar
   const renderAvatar = () => {
     if (!selectedContact) return null;
-    
+
     const initials = getInitials(selectedContact.name);
     const bgColor = getAvatarColor(selectedContact.name);
-    
+
     return (
-      <Animated.View 
+      <Animated.View
         style={[
           styles.avatarContainer,
           isRinging && { transform: [{ scale: ringingAnimation }] }
@@ -455,32 +478,32 @@ const FakeCallScreen = () => {
       </Animated.View>
     );
   };
-  
+
   // Render incoming call UI
   const renderIncomingCall = () => (
     <View style={styles.incomingCallContainer}>
       {renderAvatar()}
-      
+
       <Text style={styles.callerName}>
         {selectedContact?.name || 'Unknown'}
       </Text>
-      
+
       <Text style={styles.incomingText}>
-        {timerActive 
-          ? `Calling in ${delaySeconds} seconds...` 
+        {timerActive
+          ? `Calling in ${delaySeconds} seconds...`
           : 'Incoming call...'}
       </Text>
-      
+
       {!timerActive && (
         <View style={styles.callActions}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.callButton, styles.rejectButton]}
             onPress={handleRejectCall}
           >
             <MaterialIcons name="call-end" size={30} color="#FFF" />
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={[styles.callButton, styles.acceptButton]}
             onPress={handleAcceptCall}
           >
@@ -490,54 +513,54 @@ const FakeCallScreen = () => {
       )}
     </View>
   );
-  
+
   // Render active call UI
   const renderActiveCall = () => (
     <View style={styles.activeCallContainer}>
       {renderAvatar()}
-      
+
       <Text style={styles.callerName}>
         {selectedContact?.name || 'Unknown'}
       </Text>
-      
+
       <Text style={styles.callStatus}>Call in progress</Text>
       <Text style={styles.callDuration}>{formatDuration(callDuration)}</Text>
-      
+
       <View style={styles.callControls}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.controlButton}
           onPress={() => setIsMuted(!isMuted)}
         >
-          <Ionicons 
-            name={isMuted ? "mic-off" : "mic"} 
-            size={24} 
-            color={isMuted ? "#FFB5D8" : "#FFF"} 
+          <Ionicons
+            name={isMuted ? "mic-off" : "mic"}
+            size={24}
+            color={isMuted ? "#FFB5D8" : "#FFF"}
           />
           <Text style={styles.controlText}>Mute</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={[styles.callButton, styles.endCallButton]}
           onPress={handleEndCall}
         >
           <MaterialIcons name="call-end" size={30} color="#FFF" />
         </TouchableOpacity>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={styles.controlButton}
           onPress={() => setIsSpeakerOn(!isSpeakerOn)}
         >
-          <Ionicons 
-            name={isSpeakerOn ? "volume-high" : "volume-medium"} 
-            size={24} 
-            color={isSpeakerOn ? "#FFB5D8" : "#FFF"} 
+          <Ionicons
+            name={isSpeakerOn ? "volume-high" : "volume-medium"}
+            size={24}
+            color={isSpeakerOn ? "#FFB5D8" : "#FFF"}
           />
           <Text style={styles.controlText}>Speaker</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
-  
+
   // Render contact selection modal
   const renderContactsModal = () => (
     <Modal
@@ -562,7 +585,7 @@ const FakeCallScreen = () => {
       <View style={styles.modalContainer}>
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>Select Contact for Fake Call</Text>
-          
+
           {contacts.length === 0 ? (
             <View style={styles.noContactsContainer}>
               <Ionicons name="person-outline" size={50} color="#999" />
@@ -582,7 +605,7 @@ const FakeCallScreen = () => {
                   Use Unknown Caller
                 </Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 style={styles.addContactButton}
                 onPress={() => {
@@ -602,10 +625,10 @@ const FakeCallScreen = () => {
                   style={styles.contactItem}
                   onPress={() => selectContactForCall(contact)}
                 >
-                  <View 
+                  <View
                     style={[
-                      styles.contactAvatar, 
-                      {backgroundColor: getAvatarColor(contact.name)}
+                      styles.contactAvatar,
+                      { backgroundColor: getAvatarColor(contact.name) }
                     ]}
                   >
                     <Text style={styles.contactAvatarText}>
@@ -621,7 +644,7 @@ const FakeCallScreen = () => {
                   <Ionicons name="chevron-forward" size={20} color="#999" />
                 </TouchableOpacity>
               ))}
-              
+
               <TouchableOpacity
                 style={styles.cancelButton}
                 onPress={() => {
@@ -641,13 +664,13 @@ const FakeCallScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#000" />
-      
+
       {/* Contact selection modal */}
       {renderContactsModal()}
-      
+
       {/* Call screen content */}
       {isCallActive ? renderActiveCall() : renderIncomingCall()}
-      
+
       {/* Call ending overlay */}
       {isCallEnding && (
         <View style={styles.callEndingOverlay}>
