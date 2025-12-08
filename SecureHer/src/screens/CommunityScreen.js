@@ -22,6 +22,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { Share } from 'react-native';
 import useSentimentAnalysis from '../hooks/useSentimentAnalysis';
+import { API_URL } from '../config';
 
 const CommunityScreen = () => {
   const navigation = useNavigation();
@@ -126,7 +127,7 @@ const CommunityScreen = () => {
       }
 
       const response = await axios.get(
-        'https://womensafety-1-5znp.onrender.com/women/getPosts',
+        `${API_URL}/posts/posts`,
         {
           headers: {
             Authorization: `Bearer ${token}`
@@ -299,8 +300,17 @@ const CommunityScreen = () => {
       }
 
       // Send the post request
+      console.log('📤 Sending post to:', `${API_URL}/posts/posts`);
+      console.log('📝 FormData contents:', {
+        title: postTitle,
+        description: postDescription,
+        location: postLocation,
+        tags: postTags,
+        hasImage: !!selectedImage
+      });
+
       const response = await axios.post(
-        'https://womensafety-1-5znp.onrender.com/women/addPost',
+        `${API_URL}/posts/posts`,
         formData,
         {
           headers: {
@@ -309,6 +319,8 @@ const CommunityScreen = () => {
           }
         }
       );
+
+      console.log('✅ Response:', response.data);
 
       if (response.data) {
         Alert.alert('Success', 'Your post has been created successfully');
@@ -600,7 +612,7 @@ const CommunityScreen = () => {
             </View>
             <View>
               <Text style={styles.userName}>
-                {item.userName || `User ${item.userId ? item.userId.toString().substr(-4) : 'Unknown'}`}
+                {item.username || item.userName || `User ${item.userId ? item.userId.toString().substr(-4) : 'Unknown'}`}
               </Text>
               <Text style={styles.postTime}>{formattedDate}</Text>
             </View>
@@ -611,7 +623,7 @@ const CommunityScreen = () => {
         </View>
 
         <View style={styles.postContent}>
-          <Text style={styles.postTitle}>{item.title}</Text>
+          <Text style={styles.postTitle}>{item.title || item.content || 'No content'}</Text>
           {item.description && (
             <Text style={styles.postDescription}>{truncateText(item.description)}</Text>
           )}
@@ -639,9 +651,9 @@ const CommunityScreen = () => {
           )}
         </View>
 
-        {item.image && (
+        {(item.image || (item.images && item.images.length > 0)) && (
           <Image
-            source={{ uri: item.image }}
+            source={{ uri: item.image || `${API_URL}${item.images[0]}` }}
             style={styles.postImage}
             loadingIndicatorSource={require('../../assets/icon.png')}
           />

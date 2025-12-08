@@ -9,6 +9,7 @@ const { Server } = require('socket.io');
 const path = require('path');
 const userRoutes = require('./routes/userRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const postRoutes = require('./routes/postRoutes');
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 
 const app = express();
@@ -38,6 +39,7 @@ mongoose.connect(MONGODB_URI)
 // Routes
 app.use('/users', userRoutes);
 app.use('/admin', adminRoutes);
+app.use('/posts', postRoutes);
 
 // Serve Static Uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
