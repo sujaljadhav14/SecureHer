@@ -42,6 +42,7 @@ const FakeCallScreen = () => {
   const [selectedContact, setSelectedContact] = useState(null);
   const [pickContactModalVisible, setPickContactModalVisible] = useState(!contact);
   const [sound, setSound] = useState(null);
+  const soundRef = useRef(null); // Ref to track sound for cleanup callbacks
   const [delayedCall, setDelayedCall] = useState(route.params?.delayed || false);
   const [timerActive, setTimerActive] = useState(false);
   const [delaySeconds, setDelaySeconds] = useState(route.params?.delaySeconds || 10);
@@ -101,7 +102,11 @@ const FakeCallScreen = () => {
 
     // Clean up when component unmounts
     return () => {
-      stopSound();
+      // Use the ref to ensure we clean up the actual sound object
+      if (soundRef.current) {
+        soundRef.current.stopAsync().catch(() => { });
+        soundRef.current.unloadAsync().catch(() => { });
+      }
       Vibration.cancel();
       if (durationInterval.current) {
         clearInterval(durationInterval.current);
@@ -256,13 +261,15 @@ const FakeCallScreen = () => {
           { shouldPlay: true, isLooping: true, volume: 1.0 }
         );
         setSound(sound);
+        soundRef.current = sound;
       } else {
         // Fallback to the app's default ringtone
-        const { sound } = await Audio.Sound.createAsync(
+        const { sound: newSound } = await Audio.Sound.createAsync(
           require('../../assets/ringtone.mp3'),
           { shouldPlay: true, isLooping: true, volume: 1.0 }
         );
-        setSound(sound);
+        setSound(newSound);
+        soundRef.current = newSound;
       }
     } catch (error) {
       console.error('Error playing ringtone:', error);
@@ -273,13 +280,15 @@ const FakeCallScreen = () => {
   // Stop ringtone and vibration
   const stopSound = async () => {
     try {
-      if (sound) {
+      const soundToStop = sound || soundRef.current;
+      if (soundToStop) {
         // First stop playback
-        await sound.stopAsync();
+        await soundToStop.stopAsync();
         // Then unload the sound
-        await sound.unloadAsync();
+        await soundToStop.unloadAsync();
         // Clear the sound reference
         setSound(null);
+        soundRef.current = null;
       }
     } catch (error) {
       console.error('Error stopping sound:', error);

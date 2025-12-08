@@ -441,7 +441,23 @@ const JourneyTracker = () => {
       const result = await response.json();
 
       if (result.status !== 'OK') {
-        throw new Error(`Directions API error: ${result.status}`);
+        console.warn(`Directions API error: ${result.status}, falling back to offline mode`);
+        // Instead of throwing, we'll fall back to straight line
+        const fallbackRoute = generateFallbackRoute(originLoc, destinationLoc);
+        setRoutes([fallbackRoute]);
+        setSelectedRouteIndex(0);
+        setRoute(fallbackRoute.path);
+        setIntermediatePlaces(fallbackRoute.places);
+        setDistance(fallbackRoute.distance);
+        setEstimatedTime(fallbackRoute.duration);
+
+        // Show a toast/alert about offline mode
+        Alert.alert('Navigation Offline', 'Could not fetch exact route. Showing direct path instead.');
+
+        // Fit map
+        fitMapToRoute(fallbackRoute.path);
+        setLoading(false);
+        return;
       }
 
       if (result.routes && result.routes.length) {
@@ -488,10 +504,72 @@ const JourneyTracker = () => {
       }
     } catch (error) {
       console.error('Error fetching routes:', error);
-      Alert.alert('Error', 'Could not fetch routes. Please try again.');
+
+      // Fallback for network errors
+      console.log('Using fallback route due to error');
+      const fallbackRoute = generateFallbackRoute(originLoc, destinationLoc);
+      setRoutes([fallbackRoute]);
+      setSelectedRouteIndex(0);
+      setRoute(fallbackRoute.path);
+      setIntermediatePlaces(fallbackRoute.places);
+      setDistance(fallbackRoute.distance);
+      setEstimatedTime(fallbackRoute.duration); // Estimates based on straight line
+
+      Alert.alert('Network Issue', 'Using offline mode for navigation.');
+      fitMapToRoute(fallbackRoute.path);
     } finally {
       setLoading(false);
     }
+  };
+
+  const generateFallbackRoute = (start, end) => {
+    // 1. Create a straight line path
+    const path = [
+      { latitude: start.latitude, longitude: start.longitude },
+      { latitude: end.latitude, longitude: end.longitude }
+    ];
+
+    // 2. Calculate distance (straight line)
+    const distValueKms = calculateDistance(start, end);
+    const distText = `${distValueKms.toFixed(1)} km`;
+
+    // 3. Estimate duration based on travel mode
+    const speed = getSpeedByMode(travelMode); // km/h
+    const timeHours = distValueKms / speed;
+    const timeMins = Math.round(timeHours * 60);
+    const durationText = timeMins > 60
+      ? `${Math.floor(timeMins / 60)} hr ${timeMins % 60} min`
+      : `${timeMins} mins`;
+
+    // 4. Generate places points for safety analysis mockup
+    const places = [
+      {
+        name: 'Starting Point',
+        position: start,
+        isStart: true,
+        isEnd: false,
+        isWaypoint: true
+      },
+      {
+        name: 'Destination',
+        position: end,
+        isStart: false,
+        isEnd: true,
+        isWaypoint: true
+      }
+    ];
+
+    return {
+      index: 0,
+      distance: distText,
+      duration: durationText,
+      distanceValue: distValueKms * 1000, // meters
+      durationValue: timeMins * 60, // seconds
+      summary: 'Direct Path (Offline)',
+      path: path,
+      places: places,
+      steps: []
+    };
   };
 
   const analyzeSafetyForRoutes = async (routes) => {
